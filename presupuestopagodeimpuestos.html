@@ -3407,7 +3407,7 @@
                 hint.style.opacity = '0';
                 hint.style.transition = 'opacity 0.3s';
             }
-            updateSignatureStatus('Firmando...', '#007bff');
+            updateSignatureStatus('Signing...', '#007bff');
         }
         
         function updateSignatureStatus(text, color = '#666') {
@@ -3468,7 +3468,7 @@
             ctx.beginPath();
             ctx.moveTo(lastX, lastY);
             hideHint();
-            updateSignatureStatus('Firmando...', '#007bff');
+            updateSignatureStatus('Signing...', '#007bff');
         }
         
         function draw(e, canvasId) {
@@ -3557,7 +3557,7 @@
                     const hasSignature = imageData.data.some((pixel, index) => index % 4 === 3 && pixel > 0);
                     
                     if (hasSignature) {
-                        updateSignatureStatus('✓ Firma lista para guardar', '#28a745');
+                        updateSignatureStatus('✓ Signature ready to save', '#28a745');
                     } else {
                         updateSignatureStatus('', '');
                     }
@@ -3618,7 +3618,7 @@
                 
                 if (!hasSignature) {
                     alert('⚠️ Please draw your signature in the box');
-                    updateSignatureStatus('⚠️ Firma requerida', '#dc3545');
+                    updateSignatureStatus('⚠️ Signature required', '#dc3545');
                     return;
                 }
                 
@@ -3641,7 +3641,7 @@
                 }));
                 
                 alert('✅ Digital signature saved successfully');
-                updateSignatureStatus('✓ Firma guardada exitosamente', '#28a745');
+                updateSignatureStatus('✓ Signature saved successfully', '#28a745');
             }
         }
         
@@ -3670,7 +3670,7 @@
                 link.href = dataURL;
                 link.click();
                 
-                updateSignatureStatus('✓ Firma descargada', '#007bff');
+                updateSignatureStatus('✓ Signature downloaded', '#007bff');
             }
         }
         
@@ -3752,7 +3752,7 @@
             hideHint();
             
             // Actualizar estado
-            updateSignatureStatus('✓ Firma cargada desde imagen', '#28a745');
+            updateSignatureStatus('✓ Signature loaded from image', '#28a745');
             
             // Verificar si hay contenido
             setTimeout(() => {
