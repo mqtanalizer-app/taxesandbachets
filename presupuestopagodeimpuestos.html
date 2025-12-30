@@ -1637,8 +1637,20 @@
             </div>
         </div>
 
-        <!-- CONTENT -->
-        <div class="content">
+        <!-- TAB NAVIGATION -->
+        <div class="tab-navigation" style="background: white; border-bottom: 3px solid #e2e8f0; padding: 0; margin: 0;">
+            <div style="max-width: 1200px; margin: 0 auto; display: flex; gap: 0;">
+                <button class="tab-button active" onclick="showTab('quote')" id="tab-quote" style="flex: 1; padding: 20px; background: transparent; border: none; border-bottom: 3px solid #2563eb; color: #2563eb; font-weight: 700; font-size: 16px; cursor: pointer; transition: all 0.3s;">
+                    📋 Quote & Information
+                </button>
+                <button class="tab-button" onclick="showTab('forms')" id="tab-forms" style="flex: 1; padding: 20px; background: transparent; border: none; border-bottom: 3px solid transparent; color: #64748b; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.3s;">
+                    📄 IRS Forms
+                </button>
+            </div>
+        </div>
+
+        <!-- CONTENT - QUOTE TAB -->
+        <div class="content" id="tab-content-quote">
             
             <!-- SECCIÓN 1: INFORMACIÓN DEL CLIENTE -->
             <div class="section">
@@ -2597,6 +2609,269 @@
             </div>
 
         </div>
+        <!-- END QUOTE TAB CONTENT -->
+
+        <!-- CONTENT - FORMS TAB -->
+        <div class="content" id="tab-content-forms" style="display: none;">
+            
+            <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); padding: 25px; border-radius: 12px; margin-bottom: 30px; border: 2px solid #0ea5e9;">
+                <h3 style="color: #0c4a6e; margin: 0 0 10px 0; font-size: 22px;">📄 IRS Forms Auto-Generator</h3>
+                <p style="color: #075985; margin: 0 0 15px 0; font-size: 14px;">Forms will be automatically filled based on the information provided in the Quote section. Click "Auto-Fill Forms" to populate all forms with your client data.</p>
+                <button onclick="autoFillAllForms()" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 14px; box-shadow: 0 4px 12px rgba(14,165,233,0.3);">✨ Auto-Fill All Forms</button>
+            </div>
+
+            <!-- Form W-7: ITIN Application -->
+            <div class="form-section" id="form-w7-section">
+                <div class="section">
+                    <div class="section-header">
+                        <div class="section-number">W-7</div>
+                        <span>Form W-7: Application for IRS Individual Taxpayer Identification Number</span>
+                        <button onclick="printForm('w7')" style="margin-left: auto; background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">🖨️ Print</button>
+                    </div>
+                    
+                    <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0;">
+                        <h4 style="color: #1e3c72; margin: 0 0 15px 0;">Instructions</h4>
+                        <p style="margin: 0; color: #475569; font-size: 14px;">Complete this form to apply for an ITIN. This form is required for each person who needs an ITIN. Attach a certified copy of your passport or other acceptable documentation.</p>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div class="form-group">
+                            <label>1a. Name (First, Middle, Last) <span class="required">*</span></label>
+                            <input type="text" id="w7-name1" class="form-w7-field" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>1b. Mailing Address</label>
+                            <input type="text" id="w7-address1" class="form-w7-field" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>1c. City, State, ZIP Code</label>
+                            <input type="text" id="w7-city-state-zip1" class="form-w7-field" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>3. Date of Birth (MM/DD/YYYY) <span class="required">*</span></label>
+                            <input type="text" id="w7-dob1" class="form-w7-field" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>5. Country of Birth <span class="required">*</span></label>
+                            <input type="text" id="w7-birth-country1" class="form-w7-field" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>6. Country of Citizenship <span class="required">*</span></label>
+                            <input type="text" id="w7-citizenship1" class="form-w7-field" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>7. Passport Number</label>
+                            <input type="text" id="w7-passport1" class="form-w7-field" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>9. Passport Expiration Date</label>
+                            <input type="text" id="w7-passport-exp1" class="form-w7-field" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>10. Reason for applying <span class="required">*</span></label>
+                            <select id="w7-reason1" class="form-w7-field">
+                                <option value="">Select reason</option>
+                                <option value="b" selected>b. Nonresident alien filing a U.S. tax return</option>
+                                <option value="e">e. Spouse of U.S. citizen/resident alien</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>11. Signature</label>
+                            <div style="border: 2px dashed #cbd5e1; padding: 15px; border-radius: 8px; min-height: 60px; background: #f8fafc;">
+                                <div id="w7-signature1" style="color: #64748b; font-style: italic;">Signature will appear here</div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>12. Date Signed</label>
+                            <input type="date" id="w7-sign-date1" class="form-w7-field">
+                        </div>
+                    </div>
+
+                    <!-- Spouse W-7 Form (if applicable) -->
+                    <div id="w7-spouse-section" style="display: none; margin-top: 40px; padding-top: 40px; border-top: 3px solid #e2e8f0;">
+                        <h4 style="color: #1e3c72; margin-bottom: 20px;">Spouse ITIN Application (Form W-7)</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                            <div class="form-group">
+                                <label>1a. Name (First, Middle, Last) <span class="required">*</span></label>
+                                <input type="text" id="w7-name2" class="form-w7-field" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>3. Date of Birth (MM/DD/YYYY) <span class="required">*</span></label>
+                                <input type="text" id="w7-dob2" class="form-w7-field" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>5. Country of Birth <span class="required">*</span></label>
+                                <input type="text" id="w7-birth-country2" class="form-w7-field" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>6. Country of Citizenship <span class="required">*</span></label>
+                                <input type="text" id="w7-citizenship2" class="form-w7-field" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>7. Passport Number</label>
+                                <input type="text" id="w7-passport2" class="form-w7-field" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>10. Reason for applying <span class="required">*</span></label>
+                                <select id="w7-reason2" class="form-w7-field">
+                                    <option value="">Select reason</option>
+                                    <option value="b">b. Nonresident alien filing a U.S. tax return</option>
+                                    <option value="e">e. Spouse of U.S. citizen/resident alien</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <label>11. Signature</label>
+                                <div style="border: 2px dashed #cbd5e1; padding: 15px; border-radius: 8px; min-height: 60px; background: #f8fafc;">
+                                    <div id="w7-signature2" style="color: #64748b; font-style: italic;">Signature will appear here</div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>12. Date Signed</label>
+                                <input type="date" id="w7-sign-date2" class="form-w7-field">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form 1040: Tax Return -->
+            <div class="form-section" id="form-1040-section">
+                <div class="section">
+                    <div class="section-header">
+                        <div class="section-number">1040</div>
+                        <span>Form 1040: U.S. Individual Income Tax Return</span>
+                        <button onclick="printForm('1040')" style="margin-left: auto; background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">🖨️ Print</button>
+                    </div>
+                    
+                    <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0;">
+                        <h4 style="color: #1e3c72; margin: 0 0 10px 0;">Tax Year 2024</h4>
+                        <p style="margin: 0; color: #475569; font-size: 14px;">Complete this form based on the filing status selected in the Quote section.</p>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div class="form-group">
+                            <label>Filing Status <span class="required">*</span></label>
+                            <input type="text" id="1040-filing-status" class="form-1040-field" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>1a. First name and middle initial</label>
+                            <input type="text" id="1040-name1-first" class="form-1040-field" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>1b. Last name</label>
+                            <input type="text" id="1040-name1-last" class="form-1040-field" readonly>
+                        </div>
+                        <div class="form-group" id="1040-spouse-name-group" style="display: none;">
+                            <label>1c. Spouse's first name and middle initial</label>
+                            <input type="text" id="1040-name2-first" class="form-1040-field" readonly>
+                        </div>
+                        <div class="form-group" id="1040-spouse-last-group" style="display: none;">
+                            <label>1d. Spouse's last name</label>
+                            <input type="text" id="1040-name2-last" class="form-1040-field" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>2. Social Security Number (SSN) or ITIN</label>
+                            <input type="text" id="1040-ssn1" class="form-1040-field" placeholder="ITIN (if applying)">
+                        </div>
+                        <div class="form-group" id="1040-spouse-ssn-group" style="display: none;">
+                            <label>3. Spouse's SSN or ITIN</label>
+                            <input type="text" id="1040-ssn2" class="form-1040-field" placeholder="ITIN (if applying)">
+                        </div>
+                        <div class="form-group">
+                            <label>4. Home Address</label>
+                            <input type="text" id="1040-address" class="form-1040-field" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>5. City, State, ZIP Code</label>
+                            <input type="text" id="1040-city-state-zip" class="form-1040-field" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>6. Standard Deduction</label>
+                            <input type="text" id="1040-standard-deduction" class="form-1040-field" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Signature (Taxpayer)</label>
+                            <div style="border: 2px dashed #cbd5e1; padding: 15px; border-radius: 8px; min-height: 60px; background: #f8fafc;">
+                                <div id="1040-signature1" style="color: #64748b; font-style: italic;">Signature will appear here</div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Date</label>
+                            <input type="date" id="1040-sign-date1" class="form-1040-field">
+                        </div>
+                        <div class="form-group" id="1040-spouse-sign-section" style="display: none;">
+                            <label>Signature (Spouse - if filing jointly)</label>
+                            <div style="border: 2px dashed #cbd5e1; padding: 15px; border-radius: 8px; min-height: 60px; background: #f8fafc;">
+                                <div id="1040-signature2" style="color: #64748b; font-style: italic;">Signature will appear here</div>
+                            </div>
+                        </div>
+                        <div class="form-group" id="1040-spouse-date-section" style="display: none;">
+                            <label>Date (Spouse)</label>
+                            <input type="date" id="1040-sign-date2" class="form-1040-field">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Schedule C: Business Income -->
+            <div class="form-section" id="form-schedulec-section">
+                <div class="section">
+                    <div class="section-header">
+                        <div class="section-number">C</div>
+                        <span>Schedule C (Form 1040): Profit or Loss from Business</span>
+                        <button onclick="printForm('schedulec')" style="margin-left: auto; background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">🖨️ Print</button>
+                    </div>
+                    
+                    <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0;">
+                        <h4 style="color: #1e3c72; margin: 0 0 10px 0;">Sole Proprietorship Business Income and Expenses</h4>
+                        <p style="margin: 0; color: #475569; font-size: 14px;">This form is used to report income and expenses from a business operated as a sole proprietorship.</p>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Part I - Income</label>
+                        </div>
+                        <div class="form-group">
+                            <label>1. Gross receipts or sales</label>
+                            <input type="text" id="sc-gross-receipts" class="form-schedulec-field" readonly>
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Part II - Expenses</label>
+                        </div>
+                        <div class="form-group">
+                            <label>27. Total expenses</label>
+                            <input type="text" id="sc-total-expenses" class="form-schedulec-field" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>28. Tentative profit (Line 1 - Line 27)</label>
+                            <input type="text" id="sc-net-income" class="form-schedulec-field" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>30. Net profit or (loss)</label>
+                            <input type="text" id="sc-net-profit-loss" class="form-schedulec-field" readonly>
+                        </div>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Business Name</label>
+                            <input type="text" id="sc-business-name" class="form-schedulec-field" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Business Address</label>
+                            <input type="text" id="sc-business-address" class="form-schedulec-field" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>EIN</label>
+                            <input type="text" id="sc-ein" class="form-schedulec-field" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Principal business or profession</label>
+                            <input type="text" id="sc-business-type" class="form-schedulec-field" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <!-- END FORMS TAB CONTENT -->
 
         <!-- BOTONES DE ACCIÓN -->
         <div class="action-buttons no-print">
@@ -2797,6 +3072,9 @@
             
             // Actualizar tabla resumen
             updateSummaryTable(totalITIN, subtotalTax, precioScheduleC, totalGeneral, numPersonas, filingStatusText);
+            
+            // Update form visibility when prices change
+            updateFormVisibility();
         }
         
         // Función para actualizar tabla resumen
@@ -3230,6 +3508,233 @@
             calcularNetIncome();
             
             alert('✅ Form filled with demo data');
+        }
+        
+        // ============================================
+        // TAB NAVIGATION FUNCTIONS
+        // ============================================
+        
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.getElementById('tab-content-quote').style.display = 'none';
+            document.getElementById('tab-content-forms').style.display = 'none';
+            
+            // Remove active class from all tabs
+            document.getElementById('tab-quote').classList.remove('active');
+            document.getElementById('tab-forms').classList.remove('active');
+            document.getElementById('tab-quote').style.borderBottomColor = 'transparent';
+            document.getElementById('tab-quote').style.color = '#64748b';
+            document.getElementById('tab-quote').style.fontWeight = '600';
+            document.getElementById('tab-forms').style.borderBottomColor = 'transparent';
+            document.getElementById('tab-forms').style.color = '#64748b';
+            document.getElementById('tab-forms').style.fontWeight = '600';
+            
+            // Show selected tab content and activate tab button
+            if (tabName === 'quote') {
+                document.getElementById('tab-content-quote').style.display = 'block';
+                document.getElementById('tab-quote').classList.add('active');
+                document.getElementById('tab-quote').style.borderBottomColor = '#2563eb';
+                document.getElementById('tab-quote').style.color = '#2563eb';
+                document.getElementById('tab-quote').style.fontWeight = '700';
+            } else if (tabName === 'forms') {
+                document.getElementById('tab-content-forms').style.display = 'block';
+                document.getElementById('tab-forms').classList.add('active');
+                document.getElementById('tab-forms').style.borderBottomColor = '#2563eb';
+                document.getElementById('tab-forms').style.color = '#2563eb';
+                document.getElementById('tab-forms').style.fontWeight = '700';
+                // Auto-fill forms when switching to forms tab
+                autoFillAllForms();
+            }
+        }
+        
+        // ============================================
+        // FORM AUTO-FILL FUNCTIONS
+        // ============================================
+        
+        function autoFillAllForms() {
+            fillW7Form();
+            fill1040Form();
+            fillScheduleCForm();
+            updateFormVisibility();
+        }
+        
+        function fillW7Form() {
+            // Taxpayer 1
+            const firstName1 = document.getElementById('firstName1')?.value || '';
+            const middleName1 = document.getElementById('middleName1')?.value || '';
+            const lastName1 = document.getElementById('lastName1')?.value || '';
+            const fullName1 = `${firstName1} ${middleName1} ${lastName1}`.trim();
+            
+            document.getElementById('w7-name1').value = fullName1;
+            document.getElementById('w7-address1').value = document.getElementById('street')?.value || '';
+            const city = document.getElementById('city')?.value || '';
+            const state = document.getElementById('state')?.value || '';
+            const zip = document.getElementById('zip')?.value || '';
+            document.getElementById('w7-city-state-zip1').value = `${city}, ${state} ${zip}`.trim();
+            
+            const dob1 = document.getElementById('dob1')?.value || '';
+            if (dob1) {
+                const dateObj = new Date(dob1);
+                const formatted = `${String(dateObj.getMonth() + 1).padStart(2, '0')}/${String(dateObj.getDate()).padStart(2, '0')}/${dateObj.getFullYear()}`;
+                document.getElementById('w7-dob1').value = formatted;
+            }
+            
+            document.getElementById('w7-birth-country1').value = document.getElementById('birthCountry1')?.value || '';
+            document.getElementById('w7-citizenship1').value = document.getElementById('citizenship1')?.value || '';
+            document.getElementById('w7-passport1').value = document.getElementById('passport1')?.value || '';
+            
+            const passportExp1 = document.getElementById('passportExp1')?.value || '';
+            if (passportExp1) {
+                const dateObj = new Date(passportExp1);
+                const formatted = `${String(dateObj.getMonth() + 1).padStart(2, '0')}/${String(dateObj.getDate()).padStart(2, '0')}/${dateObj.getFullYear()}`;
+                document.getElementById('w7-passport-exp1').value = formatted;
+            }
+            
+            // Signature
+            document.getElementById('w7-signature1').textContent = fullName1;
+            
+            // Spouse (if applicable)
+            const firstName2 = document.getElementById('firstName2')?.value || '';
+            const middleName2 = document.getElementById('middleName2')?.value || '';
+            const lastName2 = document.getElementById('lastName2')?.value || '';
+            const maritalStatus = document.getElementById('maritalStatus')?.value || '';
+            
+            if ((firstName2 || lastName2) && maritalStatus === 'married') {
+                document.getElementById('w7-spouse-section').style.display = 'block';
+                const fullName2 = `${firstName2} ${middleName2} ${lastName2}`.trim();
+                document.getElementById('w7-name2').value = fullName2;
+                
+                const dob2 = document.getElementById('dob2')?.value || '';
+                if (dob2) {
+                    const dateObj = new Date(dob2);
+                    const formatted = `${String(dateObj.getMonth() + 1).padStart(2, '0')}/${String(dateObj.getDate()).padStart(2, '0')}/${dateObj.getFullYear()}`;
+                    document.getElementById('w7-dob2').value = formatted;
+                }
+                
+                document.getElementById('w7-birth-country2').value = document.getElementById('birthCountry2')?.value || '';
+                document.getElementById('w7-citizenship2').value = document.getElementById('citizenship2')?.value || '';
+                document.getElementById('w7-passport2').value = document.getElementById('passport2')?.value || '';
+                document.getElementById('w7-signature2').textContent = fullName2;
+            } else {
+                document.getElementById('w7-spouse-section').style.display = 'none';
+            }
+        }
+        
+        function fill1040Form() {
+            const filingStatus = document.querySelector('input[name="filingStatus"]:checked')?.value || 'joint';
+            const filingStatusText = filingStatus === 'joint' ? 'Married Filing Jointly' : 
+                                     filingStatus === 'separate' ? 'Married Filing Separately' : 
+                                     'Single';
+            
+            document.getElementById('1040-filing-status').value = filingStatusText;
+            
+            // Names
+            document.getElementById('1040-name1-first').value = document.getElementById('firstName1')?.value || '';
+            document.getElementById('1040-name1-last').value = document.getElementById('lastName1')?.value || '';
+            
+            // Address
+            document.getElementById('1040-address').value = document.getElementById('street')?.value || '';
+            const city = document.getElementById('city')?.value || '';
+            const state = document.getElementById('state')?.value || '';
+            const zip = document.getElementById('zip')?.value || '';
+            document.getElementById('1040-city-state-zip').value = `${city}, ${state} ${zip}`.trim();
+            
+            // Standard deduction
+            const standardDeduction = filingStatus === 'joint' ? '$29,200' : '$14,600';
+            document.getElementById('1040-standard-deduction').value = standardDeduction;
+            
+            // Signature
+            const firstName1 = document.getElementById('firstName1')?.value || '';
+            const lastName1 = document.getElementById('lastName1')?.value || '';
+            document.getElementById('1040-signature1').textContent = `${firstName1} ${lastName1}`.trim();
+            
+            // Spouse fields (if filing jointly)
+            if (filingStatus === 'joint') {
+                document.getElementById('1040-spouse-name-group').style.display = 'block';
+                document.getElementById('1040-spouse-last-group').style.display = 'block';
+                document.getElementById('1040-spouse-ssn-group').style.display = 'block';
+                document.getElementById('1040-spouse-sign-section').style.display = 'block';
+                document.getElementById('1040-spouse-date-section').style.display = 'block';
+                
+                document.getElementById('1040-name2-first').value = document.getElementById('firstName2')?.value || '';
+                document.getElementById('1040-name2-last').value = document.getElementById('lastName2')?.value || '';
+                
+                const firstName2 = document.getElementById('firstName2')?.value || '';
+                const lastName2 = document.getElementById('lastName2')?.value || '';
+                document.getElementById('1040-signature2').textContent = `${firstName2} ${lastName2}`.trim();
+            } else {
+                document.getElementById('1040-spouse-name-group').style.display = 'none';
+                document.getElementById('1040-spouse-last-group').style.display = 'none';
+                document.getElementById('1040-spouse-ssn-group').style.display = 'none';
+                document.getElementById('1040-spouse-sign-section').style.display = 'none';
+                document.getElementById('1040-spouse-date-section').style.display = 'none';
+            }
+        }
+        
+        function fillScheduleCForm() {
+            // Business info
+            document.getElementById('sc-business-name').value = document.getElementById('llcName')?.value || '';
+            document.getElementById('sc-business-address').value = document.getElementById('llcAddress')?.value || document.getElementById('street')?.value || '';
+            document.getElementById('sc-ein').value = document.getElementById('ein')?.value || '';
+            document.getElementById('sc-business-type').value = document.getElementById('businessType')?.value || '';
+            
+            // Income and expenses
+            const grossReceipts = parseFloat(document.getElementById('grossReceipts')?.value || document.getElementById('schedCIncome')?.value || 0);
+            const totalExpenses = parseFloat(document.getElementById('totalExpenses')?.value || document.getElementById('schedCExpenses')?.value || 0);
+            const netIncome = grossReceipts - totalExpenses;
+            
+            document.getElementById('sc-gross-receipts').value = grossReceipts.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('sc-total-expenses').value = totalExpenses.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('sc-net-income').value = netIncome.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('sc-net-profit-loss').value = netIncome.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+        
+        function updateFormVisibility() {
+            // Show W-7 if ITIN service is selected (check if precioITIN has value > 0)
+            const itinPrice = parseFloat(document.getElementById('precioITIN')?.value || 0);
+            document.getElementById('form-w7-section').style.display = itinPrice > 0 ? 'block' : 'none';
+            
+            // Show 1040 if tax preparation is selected
+            const jointPrice = parseFloat(document.getElementById('precioJoint')?.value || 0);
+            const separatePrice = parseFloat(document.getElementById('precioSeparate')?.value || 0);
+            const singlePrice = parseFloat(document.getElementById('precioSingle')?.value || 0);
+            const hasTaxPrep = jointPrice > 0 || separatePrice > 0 || singlePrice > 0;
+            document.getElementById('form-1040-section').style.display = hasTaxPrep ? 'block' : 'none';
+            
+            // Show Schedule C if Schedule C service is selected
+            const scheduleCPrice = parseFloat(document.getElementById('precioScheduleC')?.value || 0);
+            document.getElementById('form-schedulec-section').style.display = scheduleCPrice > 0 ? 'block' : 'none';
+        }
+        
+        function printForm(formType) {
+            const formSection = document.getElementById(`form-${formType}-section`);
+            if (!formSection) return;
+            
+            // Create a new window for printing
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>Form ${formType.toUpperCase()}</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; padding: 20px; }
+                            .form-group { margin-bottom: 15px; }
+                            label { font-weight: bold; display: block; margin-bottom: 5px; }
+                            input, select { width: 100%; padding: 5px; border: 1px solid #ccc; }
+                            input[readonly] { background: #f5f5f5; }
+                            .section-header { background: #1e3c72; color: white; padding: 15px; margin-bottom: 20px; }
+                        </style>
+                    </head>
+                    <body>
+                        ${formSection.innerHTML}
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+            }, 250);
         }
         
         // Función para imprimir PDF
