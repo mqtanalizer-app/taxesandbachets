@@ -2470,6 +2470,11 @@
                                     <input type="color" id="signatureColor" value="#1e3c72" style="width: 50px; height: 30px; border: 1px solid #ddd; border-radius: 6px; cursor: pointer;" onchange="updateSignatureStyle()">
                                 </div>
                                 <button onclick="clearSignature('clientDigital')" class="btn" style="padding: 8px 16px; font-size: 12px; background: #dc3545; color: white; border-radius: 8px; border: none; cursor: pointer; font-weight: 600;">🗑️ Limpiar</button>
+                                <label for="signatureImageUpload" style="padding: 8px 16px; font-size: 12px; background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%); color: white; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; display: inline-block; box-shadow: 0 2px 6px rgba(111,66,193,0.3);">📷 Cargar Firma</label>
+                                <input type="file" id="signatureImageUpload" accept="image/*" style="display: none;" onchange="loadSignatureImage(event)">
+                            </div>
+                            <div style="font-size: 11px; color: #666; margin-top: -10px; margin-bottom: 10px; font-style: italic;">
+                                💡 También puedes pegar una imagen con Ctrl+V (o Cmd+V en Mac)
                             </div>
                             
                             <!-- Canvas de Firma Mejorado -->
@@ -2627,6 +2632,9 @@
             // Calcular totales iniciales
             calcularTotales();
             calcularNetIncome();
+            
+            // Configurar handler para pegar imágenes desde portapapeles
+            setupPasteHandler();
         });
         
         // Función para calcular ingresos netos
@@ -3604,6 +3612,135 @@
                 
                 updateSignatureStatus('✓ Firma descargada', '#007bff');
             }
+        }
+        
+        // Función para cargar imagen de firma desde archivo
+        function loadSignatureImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Verificar que sea una imagen
+            if (!file.type.match('image.*')) {
+                alert('⚠️ Por favor seleccione un archivo de imagen válido (JPG, PNG, etc.)');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    drawImageOnCanvas(img, 'clientDigitalSignature');
+                };
+                img.onerror = function() {
+                    alert('⚠️ Error al cargar la imagen. Por favor intente con otra imagen.');
+                };
+                img.src = e.target.result;
+            };
+            reader.onerror = function() {
+                alert('⚠️ Error al leer el archivo. Por favor intente de nuevo.');
+            };
+            reader.readAsDataURL(file);
+            
+            // Limpiar el input para permitir cargar el mismo archivo de nuevo
+            event.target.value = '';
+        }
+        
+        // Función para dibujar imagen en el canvas
+        function drawImageOnCanvas(img, canvasId) {
+            const canvas = signatureCanvases[canvasId];
+            const ctx = signatureContexts[canvasId];
+            
+            if (!canvas || !ctx) {
+                alert('⚠️ Error: Canvas no encontrado');
+                return;
+            }
+            
+            // Limpiar el canvas primero
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Calcular dimensiones para ajustar la imagen al canvas
+            const canvasRect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            const canvasWidth = canvasRect.width * dpr;
+            const canvasHeight = canvasRect.height * dpr;
+            
+            // Calcular escala manteniendo proporción
+            const scale = Math.min(
+                canvasWidth / img.width,
+                canvasHeight / img.height,
+                1 // No hacer la imagen más grande que el original
+            );
+            
+            const scaledWidth = img.width * scale;
+            const scaledHeight = img.height * scale;
+            
+            // Centrar la imagen en el canvas
+            const x = (canvasWidth / dpr - scaledWidth) / 2;
+            const y = (canvasHeight / dpr - scaledHeight) / 2;
+            
+            // Aplicar filtro para hacer la imagen más oscura (como tinta)
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.filter = 'contrast(1.2) brightness(0.8)';
+            
+            // Dibujar la imagen
+            ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
+            
+            // Restaurar filtro
+            ctx.filter = 'none';
+            
+            // Ocultar hint
+            hideHint();
+            
+            // Actualizar estado
+            updateSignatureStatus('✓ Firma cargada desde imagen', '#28a745');
+            
+            // Verificar si hay contenido
+            setTimeout(() => {
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const hasContent = imageData.data.some((pixel, index) => index % 4 === 3 && pixel > 0);
+                if (hasContent) {
+                    updateSignatureStatus('✓ Firma lista para guardar', '#28a745');
+                }
+            }, 100);
+        }
+        
+        // Función para manejar pegar desde portapapeles
+        function setupPasteHandler() {
+            document.addEventListener('paste', function(e) {
+                // Verificar si el canvas está visible y enfocado
+                const canvas = signatureCanvases['clientDigitalSignature'];
+                if (!canvas) return;
+                
+                const items = e.clipboardData.items;
+                if (!items) return;
+                
+                // Buscar imagen en el portapapeles
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image') !== -1) {
+                        e.preventDefault();
+                        const blob = items[i].getAsFile();
+                        const reader = new FileReader();
+                        
+                        reader.onload = function(event) {
+                            const img = new Image();
+                            img.onload = function() {
+                                drawImageOnCanvas(img, 'clientDigitalSignature');
+                            };
+                            img.onerror = function() {
+                                alert('⚠️ Error al procesar la imagen del portapapeles.');
+                            };
+                            img.src = event.target.result;
+                        };
+                        
+                        reader.onerror = function() {
+                            alert('⚠️ Error al leer la imagen del portapapeles.');
+                        };
+                        
+                        reader.readAsDataURL(blob);
+                        break;
+                    }
+                }
+            });
         }
         
         function generateSimpleHash(str) {
