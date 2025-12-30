@@ -2612,6 +2612,9 @@
             <button class="btn btn-primary" onclick="printPDF()">
                 <span>📄</span> Generate PDF
             </button>
+            <button class="btn" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white;" onclick="showClientList()">
+                <span>👥</span> Client Database
+            </button>
         </div>
 
         <!-- FOOTER -->
@@ -2633,6 +2636,44 @@
         </div>
     </div>
 
+    <!-- Client List Modal -->
+    <div id="clientListModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; overflow-y: auto;">
+        <div style="max-width: 1200px; margin: 30px auto; background: white; border-radius: 16px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px;">
+                <h2 style="color: #1e3c72; font-size: 28px; margin: 0;">👥 Client Database</h2>
+                <button onclick="closeClientList()" style="background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">✕ Close</button>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <input type="text" id="clientSearchInput" placeholder="Search by name, email, quote number, or password..." style="flex: 1; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                    <button onclick="searchClients()" style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">🔍 Search</button>
+                    <button onclick="refreshClientList()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">🔄 Refresh</button>
+                </div>
+                <div id="dbStatus" style="padding: 12px; border-radius: 8px; margin-bottom: 15px; background: #fff3cd; border: 1px solid #ffc107;">
+                    <strong>Database Status:</strong> <span id="dbStatusText">Checking...</span>
+                </div>
+            </div>
+            
+            <div id="clientListContainer" style="min-height: 200px;">
+                <div style="text-align: center; padding: 40px; color: #64748b;">
+                    <div style="font-size: 48px; margin-bottom: 15px;">⏳</div>
+                    <div>Loading clients...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Firebase Configuration -->
+    <script src="firebase-config.js"></script>
+    
+    <!-- Database Service -->
+    <script src="database.js"></script>
+    
     <script>
         // Variables globales
         let isEditable = true;
@@ -2995,7 +3036,7 @@
             }
         }
         
-        function saveData() {
+        async function saveData() {
             const formData = {
                 // Metadata
                 quoteNumber: document.getElementById('quoteNumber').value,
@@ -3074,25 +3115,60 @@
                 precioScheduleC: document.getElementById('precioScheduleC').value,
                 
                 // Opciones
-                filingStatus: document.querySelector('input[name="filingStatus"]:checked').value,
+                filingStatus: document.querySelector('input[name="filingStatus"]:checked')?.value || 'joint',
                 
                 // Notas
                 additionalNotes: document.getElementById('additionalNotes').value
             };
             
-            localStorage.setItem('secureAssetsQuote2025', JSON.stringify(formData));
-            alert('✅ Data saved successfully - SECURE ASSETS HOLDING LLC');
+            // Generate or get quote ID
+            const quoteNumber = formData.quoteNumber || 'ET-2025-001';
+            const quoteId = quoteNumber.replace(/\s+/g, '-').toLowerCase();
+            
+            // Save to database (Firestore with localStorage fallback)
+            try {
+                const result = await databaseService.saveClientQuote(quoteId, formData);
+                if (result.success) {
+                    const sourceMsg = result.source === 'firestore' ? ' (saved to cloud database)' : 
+                                     result.source === 'localStorage-fallback' ? ' (saved locally - Firebase not configured)' : 
+                                     ' (saved locally)';
+                    alert('✅ Data saved successfully - SECURE ASSETS HOLDING LLC' + sourceMsg);
+                } else {
+                    throw new Error(result.error || 'Unknown error');
+                }
+            } catch (error) {
+                console.error('Error saving data:', error);
+                alert('⚠️ Error saving data: ' + error.message);
+            }
         }
         
         // Función para cargar datos guardados
-        function loadSavedData() {
-            const savedData = localStorage.getItem('secureAssetsQuote2025');
-            if (savedData) {
-                const formData = JSON.parse(savedData);
-                
+        async function loadSavedData(quoteId = null, password = null) {
+            let formData = null;
+            
+            // Try to load from database
+            if (quoteId) {
+                const result = await databaseService.loadClientQuote(quoteId);
+                if (result.success) {
+                    formData = result.data;
+                }
+            } else if (password) {
+                const result = await databaseService.searchClientByPassword(password);
+                if (result.success) {
+                    formData = result.data;
+                }
+            } else {
+                // Fallback to localStorage
+                const savedData = localStorage.getItem('secureAssetsQuote2025');
+                if (savedData) {
+                    formData = JSON.parse(savedData);
+                }
+            }
+            
+            if (formData) {
                 Object.keys(formData).forEach(key => {
                     const element = document.getElementById(key);
-                    if (element && key !== 'clientPassword') {
+                    if (element && key !== 'clientPassword' && key !== 'createdAt' && key !== 'updatedAt' && key !== 'quoteId') {
                         element.value = formData[key];
                     }
                 });
@@ -3177,6 +3253,241 @@
                 }
             }, 500);
         }
+        
+        // ============================================
+        // CLIENT DATABASE FUNCTIONS
+        // ============================================
+        
+        // Show client list modal
+        async function showClientList() {
+            const modal = document.getElementById('clientListModal');
+            if (modal) {
+                modal.style.display = 'block';
+                await refreshClientList();
+            }
+        }
+        
+        // Close client list modal
+        function closeClientList() {
+            const modal = document.getElementById('clientListModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        // Refresh client list
+        async function refreshClientList() {
+            const container = document.getElementById('clientListContainer');
+            const statusText = document.getElementById('dbStatusText');
+            
+            if (!container) return;
+            
+            // Update status
+            const isFirestore = databaseService.isFirestoreAvailable();
+            if (statusText) {
+                statusText.textContent = isFirestore ? 
+                    'Connected to Firestore Database' : 
+                    'Using localStorage (Firebase not configured)';
+                const statusDiv = document.getElementById('dbStatus');
+                if (statusDiv) {
+                    statusDiv.style.background = isFirestore ? '#d1fae5' : '#fff3cd';
+                    statusDiv.style.borderColor = isFirestore ? '#10b981' : '#ffc107';
+                }
+            }
+            
+            container.innerHTML = '<div style="text-align: center; padding: 40px; color: #64748b;"><div style="font-size: 48px; margin-bottom: 15px;">⏳</div><div>Loading clients...</div></div>';
+            
+            try {
+                const result = await databaseService.getAllClients(100);
+                
+                if (result.success && result.clients && result.clients.length > 0) {
+                    let html = '<div style="display: grid; gap: 15px;">';
+                    
+                    result.clients.forEach((client, index) => {
+                        if (client.deleted) return; // Skip deleted clients
+                        
+                        const clientName = `${client.firstName1 || ''} ${client.lastName1 || ''}`.trim() || 'Unnamed Client';
+                        const clientEmail = client.email || 'No email';
+                        const quoteNum = client.quoteNumber || 'N/A';
+                        const password = client.clientPassword || 'N/A';
+                        const createdAt = client.createdAt ? (client.createdAt.toDate ? client.createdAt.toDate().toLocaleDateString() : client.createdAt) : 'Unknown';
+                        
+                        html += `
+                            <div style="border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px; background: #f8fafc; transition: all 0.3s;" onmouseover="this.style.borderColor='#2563eb'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                                    <div>
+                                        <h3 style="color: #1e3c72; margin: 0 0 8px 0; font-size: 20px;">${clientName}</h3>
+                                        <div style="color: #64748b; font-size: 14px;">
+                                            <strong>Quote #:</strong> ${quoteNum}<br>
+                                            <strong>Email:</strong> ${clientEmail}<br>
+                                            <strong>Password:</strong> <code style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">${password}</code><br>
+                                            <strong>Created:</strong> ${createdAt}
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: 8px;">
+                                        <button onclick="loadClientById('${client.quoteId || quoteNum.replace(/\s+/g, '-').toLowerCase()}')" style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">📄 Load</button>
+                                        <button onclick="deleteClient('${client.quoteId || quoteNum.replace(/\s+/g, '-').toLowerCase()}')" style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">🗑️ Delete</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    html += '</div>';
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #64748b;">
+                            <div style="font-size: 48px; margin-bottom: 15px;">📭</div>
+                            <div style="font-size: 18px; margin-bottom: 10px;">No clients found</div>
+                            <div style="font-size: 14px;">Save a quote to see it appear here</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading clients:', error);
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #dc3545;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">❌</div>
+                        <div style="font-size: 18px; margin-bottom: 10px;">Error loading clients</div>
+                        <div style="font-size: 14px;">${error.message}</div>
+                    </div>
+                `;
+            }
+        }
+        
+        // Load client by ID
+        async function loadClientById(quoteId) {
+            try {
+                await loadSavedData(quoteId);
+                closeClientList();
+                alert('✅ Client data loaded successfully');
+                // Scroll to top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (error) {
+                console.error('Error loading client:', error);
+                alert('⚠️ Error loading client: ' + error.message);
+            }
+        }
+        
+        // Search clients
+        async function searchClients() {
+            const searchInput = document.getElementById('clientSearchInput');
+            const searchTerm = searchInput?.value.trim().toLowerCase();
+            
+            if (!searchTerm) {
+                await refreshClientList();
+                return;
+            }
+            
+            const container = document.getElementById('clientListContainer');
+            container.innerHTML = '<div style="text-align: center; padding: 40px; color: #64748b;"><div style="font-size: 48px; margin-bottom: 15px;">🔍</div><div>Searching...</div></div>';
+            
+            try {
+                const result = await databaseService.getAllClients(100);
+                
+                if (result.success && result.clients) {
+                    const filtered = result.clients.filter(client => {
+                        if (client.deleted) return false;
+                        
+                        const name = `${client.firstName1 || ''} ${client.lastName1 || ''}`.toLowerCase();
+                        const email = (client.email || '').toLowerCase();
+                        const quote = (client.quoteNumber || '').toLowerCase();
+                        const password = (client.clientPassword || '').toLowerCase();
+                        
+                        return name.includes(searchTerm) || 
+                               email.includes(searchTerm) || 
+                               quote.includes(searchTerm) || 
+                               password.includes(searchTerm);
+                    });
+                    
+                    if (filtered.length > 0) {
+                        let html = '<div style="display: grid; gap: 15px;">';
+                        
+                        filtered.forEach(client => {
+                            const clientName = `${client.firstName1 || ''} ${client.lastName1 || ''}`.trim() || 'Unnamed Client';
+                            const clientEmail = client.email || 'No email';
+                            const quoteNum = client.quoteNumber || 'N/A';
+                            const password = client.clientPassword || 'N/A';
+                            const createdAt = client.createdAt ? (client.createdAt.toDate ? client.createdAt.toDate().toLocaleDateString() : client.createdAt) : 'Unknown';
+                            
+                            html += `
+                                <div style="border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px; background: #f8fafc;">
+                                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                                        <div>
+                                            <h3 style="color: #1e3c72; margin: 0 0 8px 0;">${clientName}</h3>
+                                            <div style="color: #64748b; font-size: 14px;">
+                                                <strong>Quote #:</strong> ${quoteNum}<br>
+                                                <strong>Email:</strong> ${clientEmail}<br>
+                                                <strong>Password:</strong> <code style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">${password}</code><br>
+                                                <strong>Created:</strong> ${createdAt}
+                                            </div>
+                                        </div>
+                                        <div style="display: flex; gap: 8px;">
+                                            <button onclick="loadClientById('${client.quoteId || quoteNum.replace(/\s+/g, '-').toLowerCase()}')" style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">📄 Load</button>
+                                            <button onclick="deleteClient('${client.quoteId || quoteNum.replace(/\s+/g, '-').toLowerCase()}')" style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">🗑️ Delete</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        
+                        html += '</div>';
+                        container.innerHTML = html;
+                    } else {
+                        container.innerHTML = `
+                            <div style="text-align: center; padding: 40px; color: #64748b;">
+                                <div style="font-size: 48px; margin-bottom: 15px;">🔍</div>
+                                <div>No clients found matching "${searchTerm}"</div>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('Error searching clients:', error);
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #dc3545;">
+                        <div>Error searching: ${error.message}</div>
+                    </div>
+                `;
+            }
+        }
+        
+        // Delete client
+        async function deleteClient(quoteId) {
+            if (!confirm('Are you sure you want to delete this client? This action cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                const result = await databaseService.deleteClient(quoteId);
+                if (result.success) {
+                    alert('✅ Client deleted successfully');
+                    await refreshClientList();
+                } else {
+                    throw new Error(result.error || 'Unknown error');
+                }
+            } catch (error) {
+                console.error('Error deleting client:', error);
+                alert('⚠️ Error deleting client: ' + error.message);
+            }
+        }
+        
+        // Close modal when clicking outside
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('clientListModal');
+            if (modal && event.target === modal) {
+                closeClientList();
+            }
+        });
+        
+        // Allow Enter key to search
+        document.addEventListener('keydown', function(event) {
+            const searchInput = document.getElementById('clientSearchInput');
+            if (event.key === 'Enter' && searchInput && document.activeElement === searchInput) {
+                searchClients();
+            }
+        });
         
         // Actualizar nombres en firmas
         document.getElementById('firstName1').addEventListener('input', updateSignatureNames);

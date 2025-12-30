@@ -28,3 +28,4 @@ El logo aparecerá en:
 ## Nota
 Si no agregas logo, el sistema funcionará normalmente sin mostrarlo.
 
+
