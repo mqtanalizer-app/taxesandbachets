@@ -65,8 +65,11 @@
             background: white;
             box-shadow: var(--shadow-2xl);
             border-radius: 20px;
-            overflow: hidden;
+            overflow-x: hidden;
+            overflow-y: visible;
             animation: fadeInUp 0.6s ease-out;
+            width: 100%;
+            box-sizing: border-box;
         }
         
         @keyframes fadeInUp {
@@ -274,6 +277,10 @@
         .content {
             padding: 50px;
             background: white;
+            overflow-x: hidden;
+            width: 100%;
+            box-sizing: border-box;
+            max-width: 100%;
         }
         
         .section {
@@ -766,6 +773,7 @@
         /* TABLA FISCAL PREMIUM */
         .tax-table {
             width: 100%;
+            max-width: 100%;
             border-collapse: separate;
             border-spacing: 0;
             margin: 28px 0;
@@ -773,6 +781,8 @@
             border-radius: 16px;
             overflow: hidden;
             background: white;
+            table-layout: auto;
+            box-sizing: border-box;
         }
         
         .tax-table thead {
@@ -803,6 +813,9 @@
             border-bottom: 1px solid var(--gray-200);
             font-size: 14px;
             transition: all 0.2s ease;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 0;
         }
         
         .tax-table tbody tr {
@@ -839,6 +852,7 @@
         /* RESUMEN PREMIUM */
         .summary-table {
             width: 100%;
+            max-width: 100%;
             margin: 32px 0;
             border-collapse: separate;
             border-spacing: 0;
@@ -846,6 +860,8 @@
             border-radius: 16px;
             overflow: hidden;
             background: white;
+            table-layout: auto;
+            box-sizing: border-box;
         }
         
         .summary-table thead {
@@ -867,6 +883,9 @@
             border-bottom: 1px solid var(--gray-200);
             font-size: 14px;
             transition: all 0.2s ease;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 0;
         }
         
         .summary-table tbody tr {
@@ -1330,7 +1349,85 @@
                 margin-bottom: 15px;
             }
             
+            /* Tablas responsive - Prevenir desbordamiento */
+            .tax-table,
+            .summary-table {
+                width: 100% !important;
+                max-width: 100% !important;
+                display: block;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .tax-table thead,
+            .tax-table tbody,
+            .tax-table tr,
+            .summary-table thead,
+            .summary-table tbody,
+            .summary-table tr {
+                display: table;
+                width: 100%;
+                table-layout: fixed;
+            }
+            
+            .tax-table td,
+            .tax-table th,
+            .summary-table td,
+            .summary-table th {
+                padding: 12px 10px !important;
+                font-size: 12px !important;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+            }
+            
+            .amount {
+                text-align: right !important;
+                font-size: 13px !important;
+            }
+            
+            .total-row .amount {
+                font-size: 18px !important;
+            }
+            
             /* Tablas responsive */
+            .tax-table,
+            .summary-table {
+                width: 100% !important;
+                max-width: 100% !important;
+                display: block;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            .tax-table thead,
+            .tax-table tbody,
+            .tax-table tr,
+            .summary-table thead,
+            .summary-table tbody,
+            .summary-table tr {
+                display: table;
+                width: 100%;
+                table-layout: fixed;
+            }
+            
+            .tax-table td,
+            .tax-table th,
+            .summary-table td,
+            .summary-table th {
+                padding: 12px 10px !important;
+                font-size: 12px !important;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+            }
+            
+            .amount {
+                text-align: right !important;
+                font-size: 13px !important;
+            }
+            
+            .total-row .amount {
+                font-size: 18px !important;
+            }
             table {
                 font-size: 12px;
             }
