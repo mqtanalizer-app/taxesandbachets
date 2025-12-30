@@ -2,7 +2,10 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Oferta de Servicios Fiscales 2025 - SECURE ASSETS HOLDING LLC</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@400;500;600;700&display=swap');
@@ -1210,73 +1213,200 @@
         
         /* RESPONSIVE */
         @media (max-width: 768px) {
+            body {
+                padding: 10px 5px;
+            }
+            
+            .container {
+                border-radius: 10px;
+                margin: 0;
+            }
+            
+            .letterhead {
+                padding: 30px 20px;
+            }
+            
             .content {
-                padding: 20px;
+                padding: 20px 15px;
             }
             
             .form-grid,
             .form-grid-3,
             .dual-client,
             .signature-section {
-                grid-template-columns: 1fr;
+                grid-template-columns: 1fr !important;
+                gap: 15px;
             }
             
             .metadata-bar {
-                grid-template-columns: 1fr;
-                gap: 10px;
+                grid-template-columns: 1fr !important;
+                gap: 15px;
+                padding: 20px 15px;
+            }
+            
+            .metadata-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .metadata-item input {
+                width: 100%;
             }
             
             .company-header {
                 flex-direction: column;
                 text-align: center;
+                gap: 20px;
             }
             
             .company-info {
                 text-align: center;
                 margin-top: 15px;
+                font-size: 13px;
             }
             
             .action-buttons {
                 flex-direction: column;
+                gap: 10px;
             }
             
             .btn {
                 width: 100%;
                 justify-content: center;
+                padding: 12px 20px;
+                font-size: 14px;
             }
             
             /* Firma digital responsive */
             #signatureGrid {
                 grid-template-columns: 1fr !important;
+                gap: 20px !important;
             }
             
             #clientDigitalSignature {
                 width: 100% !important;
                 max-width: 100% !important;
-                height: 200px !important;
+                height: 250px !important;
+                min-height: 250px;
+            }
+            
+            /* Contenedor del canvas responsive */
+            #clientDigitalSignature {
+                touch-action: none;
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                user-select: none;
             }
             
             /* Controles de firma responsive */
             .signature-controls {
                 flex-direction: column !important;
                 align-items: stretch !important;
+                gap: 10px !important;
             }
             
             .signature-controls > div {
                 width: 100% !important;
+                justify-content: space-between;
+            }
+            
+            /* Botones de firma responsive */
+            .signature-controls button {
+                width: 100%;
+                padding: 10px;
+            }
+            
+            /* Secciones responsive */
+            .section {
+                margin-bottom: 25px;
+            }
+            
+            .subsection {
+                padding: 15px;
+            }
+            
+            .form-group {
+                margin-bottom: 15px;
+            }
+            
+            /* Tablas responsive */
+            table {
+                font-size: 12px;
+            }
+            
+            /* Headers responsive */
+            .section-header {
+                font-size: 14px;
+                padding: 12px 15px;
+            }
+        }
+        
+        /* Responsive para pantallas muy pequeñas */
+        @media (max-width: 480px) {
+            body {
+                padding: 5px 0;
+            }
+            
+            .letterhead {
+                padding: 20px 15px;
+            }
+            
+            .letterhead h1 {
+                font-size: 20px !important;
+            }
+            
+            .content {
+                padding: 15px 10px;
+            }
+            
+            #clientDigitalSignature {
+                height: 200px !important;
+                min-height: 200px;
+            }
+            
+            .metadata-bar {
+                padding: 15px 10px;
+            }
+            
+            input, select, textarea {
+                font-size: 16px !important; /* Evita zoom en iOS */
             }
         }
         
         /* Estilos específicos para canvas de firma */
         #clientDigitalSignature {
-            touch-action: none;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
+            touch-action: none !important;
+            -webkit-touch-callout: none !important;
+            -webkit-user-select: none !important;
+            user-select: none !important;
+            -webkit-tap-highlight-color: transparent;
+            -ms-touch-action: none;
         }
         
         #clientDigitalSignature:active {
             cursor: crosshair;
+        }
+        
+        /* Prevenir scroll mientras se firma en móvil */
+        body.signing {
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+        }
+        
+        /* Mejorar área táctil en móvil */
+        @media (max-width: 768px) {
+            #clientDigitalSignature {
+                touch-action: none !important;
+                -ms-touch-action: none !important;
+            }
+            
+            /* Contenedor del canvas para móvil */
+            #clientDigitalSignature {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
         }
     </style>
 </head>
@@ -2967,14 +3097,27 @@
                     function resizeCanvas() {
                         const rect = canvas.getBoundingClientRect();
                         const dpr = window.devicePixelRatio || 1;
-                        const displayWidth = rect.width;
-                        const displayHeight = rect.height;
+                        const displayWidth = Math.floor(rect.width);
+                        const displayHeight = Math.floor(rect.height);
                         
                         // Asegurar que el canvas tenga el tamaño correcto
-                        if (canvas.width !== displayWidth * dpr || canvas.height !== displayHeight * dpr) {
-                            canvas.width = displayWidth * dpr;
-                            canvas.height = displayHeight * dpr;
+                        const scaledWidth = Math.floor(displayWidth * dpr);
+                        const scaledHeight = Math.floor(displayHeight * dpr);
+                        
+                        if (canvas.width !== scaledWidth || canvas.height !== scaledHeight) {
+                            // Guardar el contenido actual si existe
                             const ctx = signatureContexts[id];
+                            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                            
+                            // Ajustar tamaño
+                            canvas.width = scaledWidth;
+                            canvas.height = scaledHeight;
+                            
+                            // Restaurar contenido si había algo
+                            if (imageData.data.some((pixel, index) => index % 4 === 3 && pixel > 0)) {
+                                ctx.putImageData(imageData, 0, 0);
+                            }
+                            
                             ctx.scale(dpr, dpr);
                             
                             // Reconfigurar estilo después de resize
@@ -3017,28 +3160,49 @@
                     canvas.addEventListener('touchstart', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        e.stopImmediatePropagation();
+                        
+                        // Prevenir scroll mientras se firma
+                        document.body.classList.add('signing');
+                        
                         const touch = e.touches[0];
-                        startDrawing(touch, id);
+                        if (touch) {
+                            startDrawing(touch, id);
+                        }
                     }, { passive: false });
                     
                     canvas.addEventListener('touchmove', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        e.stopImmediatePropagation();
+                        
                         if (isDrawing && e.touches.length > 0) {
                             const touch = e.touches[0];
-                            draw(touch, id);
+                            if (touch) {
+                                draw(touch, id);
+                            }
                         }
                     }, { passive: false });
                     
                     canvas.addEventListener('touchend', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        e.stopImmediatePropagation();
+                        
+                        // Permitir scroll de nuevo
+                        document.body.classList.remove('signing');
+                        
                         stopDrawing();
                     }, { passive: false });
                     
                     canvas.addEventListener('touchcancel', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        e.stopImmediatePropagation();
+                        
+                        // Permitir scroll de nuevo
+                        document.body.classList.remove('signing');
+                        
                         stopDrawing();
                     }, { passive: false });
                 }
@@ -3085,17 +3249,23 @@
             let pressure = 1.0;
             
             if (e.touches && e.touches.length > 0) {
-                clientX = e.touches[0].clientX;
-                clientY = e.touches[0].clientY;
+                const touch = e.touches[0];
+                clientX = touch.clientX;
+                clientY = touch.clientY;
                 // Detectar presión en dispositivos compatibles
-                if (e.touches[0].force) {
-                    pressure = Math.max(0.5, Math.min(1.5, e.touches[0].force));
+                if (touch.force && touch.force > 0) {
+                    pressure = Math.max(0.5, Math.min(1.5, touch.force));
                 }
+            } else if (e.changedTouches && e.changedTouches.length > 0) {
+                // Para touchend y touchcancel
+                const touch = e.changedTouches[0];
+                clientX = touch.clientX;
+                clientY = touch.clientY;
             } else {
                 clientX = e.clientX;
                 clientY = e.clientY;
                 // Detectar presión en stylus
-                if (e.pressure !== undefined) {
+                if (e.pressure !== undefined && e.pressure > 0) {
                     pressure = Math.max(0.5, Math.min(1.5, e.pressure));
                 }
             }
