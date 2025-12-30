@@ -1,0 +1,90 @@
+═══════════════════════════════════════════════════════════════
+  COMANDOS RÁPIDOS PARA VERCEL - COPIA Y PEGA
+  SECURE ASSETS HOLDING LLC
+═══════════════════════════════════════════════════════════════
+
+1. CREAR CUENTA EN VERCEL (Desde navegador):
+   https://vercel.com/signup
+   
+   - Elige GitHub, GitLab, Bitbucket o Email
+   - Sigue las instrucciones en pantalla
+
+═══════════════════════════════════════════════════════════════
+
+2. INSTALAR VERCEL CLI (PowerShell como Administrador):
+
+   npm install -g vercel
+   vercel --version
+
+═══════════════════════════════════════════════════════════════
+
+3. NAVEGAR AL PROYECTO:
+
+   cd C:\Users\Luis888\Desktop\taxesandbachets
+
+═══════════════════════════════════════════════════════════════
+
+4. INICIAR SESIÓN EN VERCEL:
+
+   vercel login
+
+   (Se abrirá el navegador automáticamente)
+
+═══════════════════════════════════════════════════════════════
+
+5. DESPLEGAR (Primera vez - Interactivo):
+
+   vercel
+
+   Preguntas:
+   - Set up and deploy? → Y (Enter)
+   - Which scope? → Selecciona tu cuenta
+   - Link to existing project? → N (Enter)
+   - Project name? → secure-assets-tax-quote (Enter)
+   - Directory? → ./ (Enter)
+
+═══════════════════════════════════════════════════════════════
+
+6. DESPLEGAR A PRODUCCIÓN (Futuros deployments):
+
+   vercel --prod
+
+   O el alias corto:
+   vercel -p
+
+═══════════════════════════════════════════════════════════════
+
+7. COMANDOS ÚTILES:
+
+   vercel whoami          → Ver cuenta actual
+   vercel list            → Ver todos los deployments
+   vercel logs            → Ver logs
+   vercel inspect        → Ver info del proyecto
+   vercel logout          → Cerrar sesión
+
+═══════════════════════════════════════════════════════════════
+
+8. SECUENCIA COMPLETA (Copia y pega todo):
+
+   cd C:\Users\Luis888\Desktop\taxesandbachets
+   npm install -g vercel
+   vercel login
+   vercel --prod
+
+═══════════════════════════════════════════════════════════════
+
+9. USAR EL SCRIPT AUTOMÁTICO:
+
+   Doble clic en: deploy-vercel-completo.bat
+
+   (Hace todo automáticamente)
+
+═══════════════════════════════════════════════════════════════
+
+URL RESULTANTE:
+https://secure-assets-tax-quote.vercel.app
+
+(Se actualizará automáticamente con cada deployment)
+
+═══════════════════════════════════════════════════════════════
+

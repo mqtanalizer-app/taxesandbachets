@@ -1,0 +1,23 @@
+{
+  "name": "secure-assets-tax-quote",
+  "version": "1.0.0",
+  "description": "Professional Tax Services Quote System - SECURE ASSETS HOLDING LLC",
+  "main": "presupuestopagodeimpuestos.html",
+  "scripts": {
+    "start": "npx serve . -l 3000",
+    "dev": "npx serve . -l 3000",
+    "build": "echo 'No build step required for static HTML'"
+  },
+  "keywords": [
+    "tax",
+    "quote",
+    "fiscal",
+    "services",
+    "secure-assets"
+  ],
+  "author": "SECURE ASSETS HOLDING LLC",
+  "license": "PROPRIETARY",
+  "devDependencies": {},
+  "dependencies": {}
+}
+
