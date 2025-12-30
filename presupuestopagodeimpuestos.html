@@ -864,13 +864,13 @@
             width: 100%;
             max-width: 100%;
             margin: 32px 0;
-            border-collapse: separate;
+            border-collapse: collapse;
             border-spacing: 0;
             box-shadow: var(--shadow-xl);
             border-radius: 16px;
             overflow: hidden;
             background: white;
-            table-layout: auto;
+            table-layout: fixed;
             box-sizing: border-box;
         }
         
@@ -880,7 +880,7 @@
         }
         
         .summary-table th {
-            padding: 20px 18px;
+            padding: 20px 15px;
             text-align: left;
             font-weight: 700;
             font-size: 14px;
@@ -888,14 +888,32 @@
             letter-spacing: 0.8px;
         }
         
+        .summary-table th:first-child {
+            width: 40%;
+        }
+        
+        .summary-table th:nth-child(2) {
+            width: 35%;
+        }
+        
+        .summary-table th:last-child {
+            width: 25%;
+            text-align: right;
+        }
+        
         .summary-table td {
-            padding: 18px;
+            padding: 18px 15px;
             border-bottom: 1px solid var(--gray-200);
             font-size: 14px;
             transition: all 0.2s ease;
             word-wrap: break-word;
             overflow-wrap: break-word;
-            max-width: 0;
+            vertical-align: top;
+        }
+        
+        .summary-table td:last-child {
+            text-align: right;
+            white-space: nowrap;
         }
         
         .summary-table tbody tr {
@@ -925,16 +943,23 @@
         }
         
         .amount {
-            text-align: right;
+            text-align: right !important;
             font-weight: 700;
             color: var(--gray-900);
             font-size: 15px;
+            white-space: nowrap;
+            display: inline-block;
         }
         
         .total-row .amount {
             color: white;
             font-size: 28px;
             text-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            white-space: nowrap;
+        }
+        
+        .summary-table .total-row td {
+            padding: 28px 15px !important;
         }
         
         /* TERMS & CONDITIONS PREMIUM */
@@ -1364,29 +1389,60 @@
             .summary-table {
                 width: 100% !important;
                 max-width: 100% !important;
-                table-layout: auto;
+                table-layout: fixed !important;
                 word-wrap: break-word;
+                display: table !important;
+            }
+            
+            .tax-table th,
+            .summary-table th {
+                padding: 12px 8px !important;
+                font-size: 11px !important;
+                word-wrap: break-word;
+                overflow-wrap: break-word;
+            }
+            
+            .summary-table th:first-child {
+                width: 35% !important;
+            }
+            
+            .summary-table th:nth-child(2) {
+                width: 40% !important;
+            }
+            
+            .summary-table th:last-child {
+                width: 25% !important;
+                text-align: right !important;
             }
             
             .tax-table td,
-            .tax-table th,
-            .summary-table td,
-            .summary-table th {
-                padding: 12px 10px !important;
+            .summary-table td {
+                padding: 12px 8px !important;
                 font-size: 12px !important;
                 word-wrap: break-word;
                 overflow-wrap: break-word;
-                max-width: 0;
+                vertical-align: top;
+            }
+            
+            .summary-table td:last-child {
+                text-align: right !important;
+                white-space: nowrap !important;
             }
             
             .amount {
                 text-align: right !important;
                 font-size: 13px !important;
-                white-space: nowrap;
+                white-space: nowrap !important;
+                display: inline-block;
             }
             
             .total-row .amount {
                 font-size: 18px !important;
+                white-space: nowrap !important;
+            }
+            
+            .summary-table .total-row td {
+                padding: 20px 8px !important;
             }
             
             /* Tablas responsive */
@@ -2332,9 +2388,9 @@
                 <table class="summary-table" id="summaryTable">
                     <thead>
                         <tr>
-                            <th style="width: 40%;">Service Description<br>Descripción del Servicio</th>
-                            <th style="width: 40%;">Details<br>Detalles</th>
-                            <th style="width: 20%; text-align: right;">Amount<br>Monto</th>
+                            <th>Service Description<br>Descripción del Servicio</th>
+                            <th>Details<br>Detalles</th>
+                            <th>Amount<br>Monto</th>
                         </tr>
                     </thead>
                     <tbody id="summaryTableBody">
