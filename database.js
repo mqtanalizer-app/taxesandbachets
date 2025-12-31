@@ -124,17 +124,28 @@ class DatabaseService {
         }
     }
 
-    // Get all clients
-    async getAllClients() {
+    // Get all clients (optionally filtered by userId)
+    async getAllClients(userId = null) {
         if (!this.isAvailable) {
-            return this.getAllFromLocalStorage();
+            return this.getAllFromLocalStorage(userId);
         }
 
         try {
-            const q = query(
-                collection(db, 'clients'),
-                where('deleted', '!=', true)
-            );
+            let q;
+            if (userId) {
+                // Filter by userId
+                q = query(
+                    collection(db, 'clients'),
+                    where('userId', '==', userId),
+                    where('deleted', '!=', true)
+                );
+            } else {
+                // Get all clients
+                q = query(
+                    collection(db, 'clients'),
+                    where('deleted', '!=', true)
+                );
+            }
 
             const querySnapshot = await getDocs(q);
             const clients = [];
@@ -153,7 +164,41 @@ class DatabaseService {
             };
         } catch (error) {
             console.error('Error getting clients from Firestore:', error);
-            return this.getAllFromLocalStorage();
+            return this.getAllFromLocalStorage(userId);
+        }
+    }
+    
+    // Get all quotes for a specific user
+    async getUserQuotes(userId) {
+        if (!this.isAvailable) {
+            return this.getUserQuotesFromLocalStorage(userId);
+        }
+
+        try {
+            const q = query(
+                collection(db, 'clients'),
+                where('userId', '==', userId),
+                where('deleted', '!=', true)
+            );
+
+            const querySnapshot = await getDocs(q);
+            const quotes = [];
+
+            querySnapshot.forEach((doc) => {
+                quotes.push({
+                    id: doc.id,
+                    quoteId: doc.id,
+                    ...doc.data()
+                });
+            });
+
+            return {
+                success: true,
+                quotes: quotes
+            };
+        } catch (error) {
+            console.error('Error getting user quotes from Firestore:', error);
+            return this.getUserQuotesFromLocalStorage(userId);
         }
     }
 
@@ -240,16 +285,38 @@ class DatabaseService {
         }
     }
 
-    getAllFromLocalStorage() {
+    getAllFromLocalStorage(userId = null) {
         try {
             const keys = Object.keys(localStorage).filter(k => k.startsWith('client_'));
-            const clients = keys.map(key => ({
+            let clients = keys.map(key => ({
                 id: key.replace('client_', ''),
                 ...JSON.parse(localStorage.getItem(key))
             }));
+            
+            // Filter by userId if provided
+            if (userId) {
+                clients = clients.filter(client => client.userId === userId);
+            }
+            
             return { success: true, clients: clients };
         } catch (error) {
             return { success: false, error: error.message, clients: [] };
+        }
+    }
+    
+    getUserQuotesFromLocalStorage(userId) {
+        try {
+            const keys = Object.keys(localStorage).filter(k => k.startsWith('client_'));
+            const quotes = keys
+                .map(key => ({
+                    id: key.replace('client_', ''),
+                    ...JSON.parse(localStorage.getItem(key))
+                }))
+                .filter(client => client.userId === userId);
+            
+            return { success: true, quotes: quotes };
+        } catch (error) {
+            return { success: false, error: error.message, quotes: [] };
         }
     }
 

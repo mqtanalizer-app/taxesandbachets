@@ -4137,6 +4137,17 @@
         }
         
         async function saveData() {
+            // Get current user ID
+            let userId = null;
+            let userEmail = null;
+            if (window.authService && window.authService.isAuthenticated()) {
+                const currentUser = window.authService.getCurrentUser();
+                if (currentUser) {
+                    userId = currentUser.uid;
+                    userEmail = currentUser.email;
+                }
+            }
+            
             const formData = {
                 // Metadata
                 quoteNumber: document.getElementById('quoteNumber').value,
@@ -4144,6 +4155,11 @@
                 fechaEmision: document.getElementById('fechaEmision').value,
                 fechaValidez: document.getElementById('fechaValidez').value,
                 clientPassword: document.getElementById('clientPassword')?.value || '',
+                
+                // Associate with user
+                userId: userId,
+                userEmail: userEmail,
+                clientName: document.getElementById('firstName1').value + ' ' + document.getElementById('lastName1').value,
                 
                 // Cliente 1
                 firstName1: document.getElementById('firstName1').value,
@@ -4232,7 +4248,8 @@
                     const sourceMsg = result.source === 'firestore' ? ' (saved to cloud database)' : 
                                      result.source === 'localStorage-fallback' ? ' (saved locally - Firebase not configured)' : 
                                      ' (saved locally)';
-                    alert('✅ Data saved successfully - SECURE ASSETS HOLDING LLC' + sourceMsg);
+                    const userMsg = userId ? `\n\nAssociated with user: ${userEmail || userId}` : '';
+                    alert('✅ Data saved successfully - SECURE ASSETS HOLDING LLC' + sourceMsg + userMsg);
                 } else {
                     throw new Error(result.error || 'Unknown error');
                 }
@@ -4246,22 +4263,52 @@
         async function loadSavedData(quoteId = null, password = null) {
             let formData = null;
             
+            // Get current user ID
+            let userId = null;
+            if (window.authService && window.authService.isAuthenticated()) {
+                const currentUser = window.authService.getCurrentUser();
+                if (currentUser) {
+                    userId = currentUser.uid;
+                }
+            }
+            
             // Try to load from database
             if (quoteId) {
                 const result = await databaseService.loadClientQuote(quoteId);
                 if (result.success) {
                     formData = result.data;
+                    // Check if user has access (admin can see all, client only their own)
+                    if (formData.userId && userId && !window.authService.isAdmin() && formData.userId !== userId) {
+                        alert('⚠️ You do not have permission to access this client data.');
+                        return;
+                    }
                 }
             } else if (password) {
                 const result = await databaseService.searchClientByPassword(password);
                 if (result.success) {
                     formData = result.data;
+                    // Check if user has access
+                    if (formData.userId && userId && !window.authService.isAdmin() && formData.userId !== userId) {
+                        alert('⚠️ You do not have permission to access this client data.');
+                        return;
+                    }
                 }
             } else {
+                // Load user's own data if client, or all if admin
+                if (userId) {
+                    const result = await databaseService.getUserQuotes(userId);
+                    if (result.success && result.quotes && result.quotes.length > 0) {
+                        // Load the most recent quote
+                        formData = result.quotes[result.quotes.length - 1];
+                    }
+                }
+                
                 // Fallback to localStorage
-                const savedData = localStorage.getItem('secureAssetsQuote2025');
-                if (savedData) {
-                    formData = JSON.parse(savedData);
+                if (!formData) {
+                    const savedData = localStorage.getItem('secureAssetsQuote2025');
+                    if (savedData) {
+                        formData = JSON.parse(savedData);
+                    }
                 }
             }
             
@@ -4823,7 +4870,16 @@
             container.innerHTML = '<div style="text-align: center; padding: 40px; color: #64748b;"><div style="font-size: 48px; margin-bottom: 15px;">⏳</div><div>Loading clients...</div></div>';
             
             try {
-                const result = await databaseService.getAllClients(100);
+                // Get current user ID - clients only see their own data, admins see all
+                let userId = null;
+                if (window.authService && window.authService.isAuthenticated() && !window.authService.isAdmin()) {
+                    const currentUser = window.authService.getCurrentUser();
+                    if (currentUser) {
+                        userId = currentUser.uid;
+                    }
+                }
+                
+                const result = await databaseService.getAllClients(userId);
                 
                 if (result.success && result.clients && result.clients.length > 0) {
                     let html = '<div style="display: grid; gap: 15px;">';
@@ -4836,22 +4892,32 @@
                         const quoteNum = client.quoteNumber || 'N/A';
                         const password = client.clientPassword || 'N/A';
                         const createdAt = client.createdAt ? (client.createdAt.toDate ? client.createdAt.toDate().toLocaleDateString() : client.createdAt) : 'Unknown';
+                        const observations = client.observations || '';
+                        const quoteId = client.quoteId || quoteNum.replace(/\s+/g, '-').toLowerCase();
                         
                         html += `
-                            <div style="border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px; background: #f8fafc; transition: all 0.3s;" onmouseover="this.style.borderColor='#2563eb'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
+                            <div style="border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px; background: #f8fafc; transition: all 0.3s; margin-bottom: 15px;" onmouseover="this.style.borderColor='#2563eb'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
                                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
-                                    <div>
+                                    <div style="flex: 1;">
                                         <h3 style="color: #1e3c72; margin: 0 0 8px 0; font-size: 20px;">${clientName}</h3>
-                                        <div style="color: #64748b; font-size: 14px;">
+                                        <div style="color: #64748b; font-size: 14px; margin-bottom: 10px;">
                                             <strong>Quote #:</strong> ${quoteNum}<br>
                                             <strong>Email:</strong> ${clientEmail}<br>
-                                            <strong>Password:</strong> <code style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">${password}</code><br>
+                                            ${window.authService && window.authService.isAdmin() ? `<strong>Password:</strong> <code style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">${password}</code><br>` : ''}
+                                            <strong>User:</strong> ${client.userEmail || client.userId || 'Not assigned'}<br>
                                             <strong>Created:</strong> ${createdAt}
                                         </div>
+                                        <div style="margin-top: 10px;">
+                                            <strong style="color: #1e3c72; font-size: 14px;">📝 Observations:</strong>
+                                            <div id="observations-${quoteId}" style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin-top: 5px; min-height: 40px; color: #64748b; font-size: 13px;">
+                                                ${observations || '<em style="color: #94a3b8;">No observations yet. Click "Edit Observations" to add notes.</em>'}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div style="display: flex; gap: 8px;">
-                                        <button onclick="loadClientById('${client.quoteId || quoteNum.replace(/\s+/g, '-').toLowerCase()}')" style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">📄 Load</button>
-                                        <button onclick="deleteClient('${client.quoteId || quoteNum.replace(/\s+/g, '-').toLowerCase()}')" style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">🗑️ Delete</button>
+                                    <div style="display: flex; flex-direction: column; gap: 8px; margin-left: 15px;">
+                                        <button onclick="loadClientById('${quoteId}')" style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; white-space: nowrap;">📄 Load</button>
+                                        <button onclick="editClientObservations('${quoteId}')" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; white-space: nowrap;">📝 Edit Observations</button>
+                                        <button onclick="deleteClient('${quoteId}')" style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; white-space: nowrap;">🗑️ Delete</button>
                                     </div>
                                 </div>
                             </div>
