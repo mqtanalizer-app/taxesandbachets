@@ -3149,8 +3149,11 @@
             if (modal) {
                 modal.style.display = 'block';
                 // Show login tab by default
-                document.getElementById('loginTab').style.display = 'block';
-                document.getElementById('registerTab').style.display = 'none';
+                const loginTab = document.getElementById('loginTab');
+                if (loginTab) {
+                    loginTab.style.display = 'block';
+                }
+                // registerTab no longer exists, so we don't need to hide it
             }
         }
         
