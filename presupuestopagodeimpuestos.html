@@ -4601,6 +4601,26 @@
             }
         }
         
+        // Show Forms Library Modal
+        function showFormsLibrary() {
+            const modal = document.getElementById('formsLibraryModal');
+            if (modal) {
+                modal.style.display = 'block';
+                // Load forms if needed
+                if (typeof refreshFormsLibrary === 'function') {
+                    refreshFormsLibrary();
+                }
+            }
+        }
+        
+        // Close Forms Library Modal
+        function closeFormsLibrary() {
+            const modal = document.getElementById('formsLibraryModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
         // Refresh client list
         async function refreshClientList() {
             const container = document.getElementById('clientListContainer');
