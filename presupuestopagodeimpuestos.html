@@ -3102,6 +3102,11 @@
                     </select>
                 </div>
                 
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; color: #1e3c72; font-weight: 600; margin-bottom: 8px; font-size: 14px;">📝 Observations / Notes</label>
+                    <textarea id="newClientObservations" rows="4" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box; font-family: inherit; resize: vertical;" placeholder="Add any notes or observations about this client (optional)"></textarea>
+                </div>
+                
                 <div style="display: flex; gap: 10px; margin-top: 25px;">
                     <button type="submit" style="flex: 1; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">✅ Create Client</button>
                     <button type="button" onclick="closeCreateClientModal()" style="flex: 1; background: #64748b; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">Cancel</button>
@@ -4904,6 +4909,7 @@
             const email = document.getElementById('newClientEmail').value.trim();
             const password = document.getElementById('newClientPassword').value;
             const role = document.getElementById('newClientRole').value;
+            const observations = document.getElementById('newClientObservations').value.trim();
             
             if (!email || !password) {
                 alert('⚠️ Please enter both email and password.');
@@ -4927,10 +4933,17 @@
             submitBtn.disabled = true;
             
             try {
-                const result = await window.userManagementService.createUser(email, password, role);
+                // Prepare additional data including observations
+                const additionalData = {};
+                if (observations) {
+                    additionalData.observations = observations;
+                }
+                
+                const result = await window.userManagementService.createUser(email, password, role, additionalData);
                 
                 if (result.success) {
-                    alert(`✅ ${role === 'admin' ? 'Administrator' : 'Client'} account created successfully!\n\nEmail: ${email}\nRole: ${role}`);
+                    const obsMsg = observations ? `\n\nObservations: ${observations}` : '';
+                    alert(`✅ ${role === 'admin' ? 'Administrator' : 'Client'} account created successfully!\n\nEmail: ${email}\nRole: ${role}${obsMsg}`);
                     closeCreateClientModal();
                     // Refresh client list
                     await refreshClientList();
