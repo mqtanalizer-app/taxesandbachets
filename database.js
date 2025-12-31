@@ -244,6 +244,29 @@ class DatabaseService {
         }
     }
 
+    // Update client financials
+    async updateClientFinancials(quoteId, totalGenerated, totalSpent) {
+        if (!this.isAvailable) {
+            // Fallback to localStorage
+            return this.updateFinancialsInLocalStorage(quoteId, totalGenerated, totalSpent);
+        }
+
+        try {
+            const quoteRef = doc(db, 'clients', quoteId);
+            await updateDoc(quoteRef, {
+                totalGenerated: totalGenerated,
+                totalSpent: totalSpent,
+                updatedAt: serverTimestamp()
+            });
+
+            return { success: true };
+        } catch (error) {
+            console.error('Error updating client financials:', error);
+            // Fallback to localStorage
+            return this.updateFinancialsInLocalStorage(quoteId, totalGenerated, totalSpent);
+        }
+    }
+
     // Delete client (soft delete)
     async deleteClient(quoteId) {
         if (!this.isAvailable) {

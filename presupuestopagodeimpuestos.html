@@ -3075,6 +3075,58 @@
         </div>
     </div>
 
+    <!-- Edit Client Financials Modal -->
+    <div id="editFinancialsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10002; overflow-y: auto;">
+        <div style="max-width: 600px; margin: 50px auto; background: white; border-radius: 16px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px;">
+                <h2 style="color: #1e3c72; font-size: 28px; margin: 0;">💰 Edit Client Financials</h2>
+                <button onclick="closeEditFinancialsModal()" style="background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">✕ Close</button>
+            </div>
+            
+            <div id="editFinancialsContent" style="margin-bottom: 20px;">
+                <div style="background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 2px solid #e2e8f0;">
+                    <div style="font-size: 18px; font-weight: 700; color: #1e3c72; margin-bottom: 15px;" id="editFinancialsClientName">Client Name</div>
+                    <div style="color: #64748b; font-size: 14px;" id="editFinancialsQuoteNumber">Quote: N/A</div>
+                </div>
+                
+                <form id="editFinancialsForm" onsubmit="saveClientFinancials(event); return false;">
+                    <input type="hidden" id="editFinancialsQuoteId" value="">
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; color: #1e3c72; font-weight: 600; margin-bottom: 8px; font-size: 14px;">💰 Total Generated (Revenue) *</label>
+                        <div style="position: relative;">
+                            <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; font-weight: 600;">$</span>
+                            <input type="number" id="editFinancialsGenerated" required step="0.01" min="0" style="width: 100%; padding: 12px 12px 12px 30px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 16px; box-sizing: border-box; font-weight: 600;" placeholder="0.00">
+                        </div>
+                        <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Total revenue generated from this client</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; color: #1e3c72; font-weight: 600; margin-bottom: 8px; font-size: 14px;">💸 Total Spent (Expenses) *</label>
+                        <div style="position: relative;">
+                            <span style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #64748b; font-weight: 600;">$</span>
+                            <input type="number" id="editFinancialsSpent" required step="0.01" min="0" style="width: 100%; padding: 12px 12px 12px 30px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 16px; box-sizing: border-box; font-weight: 600;" placeholder="0.00">
+                        </div>
+                        <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Total expenses spent on this client</div>
+                    </div>
+                    
+                    <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-radius: 12px; padding: 15px; margin-bottom: 20px; border: 2px solid #0ea5e9;">
+                        <div style="font-size: 13px; font-weight: 600; color: #0c4a6e; margin-bottom: 8px;">📊 Calculated Values:</div>
+                        <div id="editFinancialsPreview" style="font-size: 14px; color: #0369a1;">
+                            <div><strong>Net Profit:</strong> <span id="previewNetProfit">$0.00</span></div>
+                            <div style="margin-top: 5px;"><strong>Profit Margin:</strong> <span id="previewProfitMargin">0.0%</span></div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; margin-top: 25px;">
+                        <button type="submit" style="flex: 1; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; box-shadow: 0 4px 12px rgba(16,185,129,0.3);">✅ Save Financials</button>
+                        <button type="button" onclick="closeEditFinancialsModal()" style="flex: 1; background: #64748b; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Create Client Modal -->
     <div id="createClientModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10001; overflow-y: auto;">
         <div style="max-width: 600px; margin: 50px auto; background: white; border-radius: 16px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
@@ -4973,6 +5025,130 @@
         
         // ========== END CREATE CLIENT FUNCTIONS ==========
         
+        // ========== CLIENT FINANCIALS FUNCTIONS ==========
+        
+        // Edit client financials
+        async function editClientFinancials(quoteId) {
+            if (!window.authService || !window.authService.isAdmin()) {
+                alert('⚠️ Only administrators can edit client financials.');
+                return;
+            }
+            
+            try {
+                // Load current client data
+                const result = await window.databaseService.loadClientQuote(quoteId);
+                if (!result.success) {
+                    alert('⚠️ Could not load client data.');
+                    return;
+                }
+                
+                const client = result.data;
+                const clientName = `${client.firstName1 || ''} ${client.lastName1 || ''}`.trim() || 'Unnamed Client';
+                const quoteNum = client.quoteNumber || quoteId;
+                
+                // Set form values
+                document.getElementById('editFinancialsQuoteId').value = quoteId;
+                document.getElementById('editFinancialsClientName').textContent = clientName;
+                document.getElementById('editFinancialsQuoteNumber').textContent = `Quote: ${quoteNum}`;
+                document.getElementById('editFinancialsGenerated').value = parseFloat(client.totalGenerated || 0).toFixed(2);
+                document.getElementById('editFinancialsSpent').value = parseFloat(client.totalSpent || 0).toFixed(2);
+                
+                // Update preview
+                updateFinancialsPreview();
+                
+                // Show modal
+                const modal = document.getElementById('editFinancialsModal');
+                if (modal) {
+                    modal.style.display = 'block';
+                }
+                
+                // Add event listeners for real-time preview
+                const generatedInput = document.getElementById('editFinancialsGenerated');
+                const spentInput = document.getElementById('editFinancialsSpent');
+                generatedInput.addEventListener('input', updateFinancialsPreview);
+                spentInput.addEventListener('input', updateFinancialsPreview);
+            } catch (error) {
+                console.error('Error loading client financials:', error);
+                alert('⚠️ Error loading client data: ' + error.message);
+            }
+        }
+        
+        // Update financials preview
+        function updateFinancialsPreview() {
+            const generated = parseFloat(document.getElementById('editFinancialsGenerated').value || 0);
+            const spent = parseFloat(document.getElementById('editFinancialsSpent').value || 0);
+            const netProfit = generated - spent;
+            const profitMargin = generated > 0 ? ((netProfit / generated) * 100).toFixed(1) : 0;
+            
+            const formatCurrency = (amount) => {
+                return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(amount);
+            };
+            
+            document.getElementById('previewNetProfit').textContent = formatCurrency(netProfit);
+            document.getElementById('previewProfitMargin').textContent = profitMargin + '%';
+            
+            // Update color based on profit
+            const previewDiv = document.getElementById('editFinancialsPreview');
+            if (netProfit >= 0) {
+                previewDiv.style.color = '#0369a1';
+            } else {
+                previewDiv.style.color = '#dc2626';
+            }
+        }
+        
+        // Close edit financials modal
+        function closeEditFinancialsModal() {
+            const modal = document.getElementById('editFinancialsModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        // Save client financials
+        async function saveClientFinancials(event) {
+            event.preventDefault();
+            
+            if (!window.authService || !window.authService.isAdmin()) {
+                alert('⚠️ Only administrators can save client financials.');
+                return;
+            }
+            
+            const quoteId = document.getElementById('editFinancialsQuoteId').value;
+            const totalGenerated = parseFloat(document.getElementById('editFinancialsGenerated').value || 0);
+            const totalSpent = parseFloat(document.getElementById('editFinancialsSpent').value || 0);
+            
+            if (isNaN(totalGenerated) || isNaN(totalSpent)) {
+                alert('⚠️ Please enter valid numbers for generated and spent amounts.');
+                return;
+            }
+            
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '⏳ Saving...';
+            submitBtn.disabled = true;
+            
+            try {
+                const result = await window.databaseService.updateClientFinancials(quoteId, totalGenerated, totalSpent);
+                
+                if (result.success) {
+                    alert('✅ Client financials updated successfully!');
+                    closeEditFinancialsModal();
+                    // Refresh client list
+                    await refreshClientList();
+                } else {
+                    throw new Error(result.error || 'Unknown error');
+                }
+            } catch (error) {
+                console.error('Error saving client financials:', error);
+                alert('⚠️ Error saving client financials: ' + error.message);
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+        
+        // ========== END CLIENT FINANCIALS FUNCTIONS ==========
+        
         // Refresh client list
         async function refreshClientList() {
             const container = document.getElementById('clientListContainer');
@@ -5018,22 +5194,83 @@
                         const quoteNum = client.quoteNumber || 'N/A';
                         const password = client.clientPassword || 'N/A';
                         const createdAt = client.createdAt ? (client.createdAt.toDate ? client.createdAt.toDate().toLocaleDateString() : client.createdAt) : 'Unknown';
+                        const observations = client.observations || '';
+                        const quoteId = client.quoteId || quoteNum.replace(/\s+/g, '-').toLowerCase();
+                        
+                        // Financial data
+                        const totalGenerated = parseFloat(client.totalGenerated || 0);
+                        const totalSpent = parseFloat(client.totalSpent || 0);
+                        const netProfit = totalGenerated - totalSpent;
+                        const profitMargin = totalGenerated > 0 ? ((netProfit / totalGenerated) * 100).toFixed(1) : 0;
+                        
+                        // Format currency
+                        const formatCurrency = (amount) => {
+                            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(amount);
+                        };
                         
                         html += `
-                            <div style="border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px; background: #f8fafc; transition: all 0.3s;" onmouseover="this.style.borderColor='#2563eb'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
-                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
-                                    <div>
-                                        <h3 style="color: #1e3c72; margin: 0 0 8px 0; font-size: 20px;">${clientName}</h3>
-                                        <div style="color: #64748b; font-size: 14px;">
-                                            <strong>Quote #:</strong> ${quoteNum}<br>
-                                            <strong>Email:</strong> ${clientEmail}<br>
-                                            <strong>Password:</strong> <code style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">${password}</code><br>
-                                            <strong>Created:</strong> ${createdAt}
+                            <div style="border: 2px solid #e2e8f0; border-radius: 16px; padding: 24px; background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); transition: all 0.3s; box-shadow: 0 2px 8px rgba(0,0,0,0.05);" onmouseover="this.style.borderColor='#2563eb'; this.style.boxShadow='0 8px 24px rgba(37,99,235,0.15)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.05)'">
+                                <!-- Header Section -->
+                                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #e2e8f0;">
+                                    <div style="flex: 1;">
+                                        <h3 style="color: #1e3c72; margin: 0 0 8px 0; font-size: 22px; font-weight: 700;">${clientName}</h3>
+                                        <div style="color: #64748b; font-size: 13px; line-height: 1.6;">
+                                            <div style="margin-bottom: 4px;"><strong>Quote #:</strong> ${quoteNum}</div>
+                                            <div style="margin-bottom: 4px;"><strong>Email:</strong> ${clientEmail}</div>
+                                            <div style="margin-bottom: 4px;"><strong>Password:</strong> <code style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${password}</code></div>
+                                            <div><strong>Created:</strong> ${createdAt}</div>
                                         </div>
                                     </div>
-                                    <div style="display: flex; gap: 8px;">
-                                        <button onclick="loadClientById('${client.quoteId || quoteNum.replace(/\s+/g, '-').toLowerCase()}')" style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">📄 Load</button>
-                                        ${window.authService && window.authService.isAdmin() ? `<button onclick="deleteClient('${client.quoteId || quoteNum.replace(/\s+/g, '-').toLowerCase()}')" style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">🗑️ Delete</button>` : ''}
+                                    <div style="display: flex; gap: 8px; flex-direction: column;">
+                                        <button onclick="loadClientById('${quoteId}')" style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; box-shadow: 0 2px 6px rgba(37,99,235,0.3); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(37,99,235,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 6px rgba(37,99,235,0.3)'">📄 Load</button>
+                                        ${window.authService && window.authService.isAdmin() ? `
+                                            <button onclick="editClientFinancials('${quoteId}')" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; box-shadow: 0 2px 6px rgba(245,158,11,0.3); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(245,158,11,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 6px rgba(245,158,11,0.3)'">💰 Edit Financials</button>
+                                            <button onclick="deleteClient('${quoteId}')" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; border: none; padding: 10px 18px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 13px; box-shadow: 0 2px 6px rgba(220,53,69,0.3); transition: all 0.2s;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(220,53,69,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 6px rgba(220,53,69,0.3)'">🗑️ Delete</button>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                                
+                                <!-- Premium Financial Cards -->
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                                    <!-- Generated Revenue Card -->
+                                    <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 12px; padding: 20px; color: white; box-shadow: 0 4px 12px rgba(16,185,129,0.25);">
+                                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                                            <div style="font-size: 14px; font-weight: 600; opacity: 0.9;">💰 Generated</div>
+                                            <div style="font-size: 24px;">📈</div>
+                                        </div>
+                                        <div style="font-size: 28px; font-weight: 700; margin-bottom: 5px;">${formatCurrency(totalGenerated)}</div>
+                                        <div style="font-size: 11px; opacity: 0.8;">Total Revenue</div>
+                                    </div>
+                                    
+                                    <!-- Spent Expenses Card -->
+                                    <div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border-radius: 12px; padding: 20px; color: white; box-shadow: 0 4px 12px rgba(239,68,68,0.25);">
+                                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                                            <div style="font-size: 14px; font-weight: 600; opacity: 0.9;">💸 Spent</div>
+                                            <div style="font-size: 24px;">📉</div>
+                                        </div>
+                                        <div style="font-size: 28px; font-weight: 700; margin-bottom: 5px;">${formatCurrency(totalSpent)}</div>
+                                        <div style="font-size: 11px; opacity: 0.8;">Total Expenses</div>
+                                    </div>
+                                    
+                                    <!-- Net Profit Card -->
+                                    <div style="background: linear-gradient(135deg, ${netProfit >= 0 ? '#3b82f6' : '#f59e0b'} 0%, ${netProfit >= 0 ? '#2563eb' : '#d97706'} 100%); border-radius: 12px; padding: 20px; color: white; box-shadow: 0 4px 12px rgba(${netProfit >= 0 ? '59,130,246' : '245,158,11'},0.25);">
+                                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                                            <div style="font-size: 14px; font-weight: 600; opacity: 0.9;">${netProfit >= 0 ? '✅' : '⚠️'} Net Profit</div>
+                                            <div style="font-size: 24px;">${netProfit >= 0 ? '💎' : '📊'}</div>
+                                        </div>
+                                        <div style="font-size: 28px; font-weight: 700; margin-bottom: 5px;">${formatCurrency(netProfit)}</div>
+                                        <div style="font-size: 11px; opacity: 0.8;">Margin: ${profitMargin}%</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Observations Section -->
+                                <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #e2e8f0;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                        <strong style="color: #1e3c72; font-size: 14px;">📝 Observations:</strong>
+                                        ${window.authService && window.authService.isAdmin() ? `<button onclick="editClientObservations('${quoteId}')" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 11px;">✏️ Edit</button>` : ''}
+                                    </div>
+                                    <div id="observations-${quoteId}" style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; min-height: 40px; color: #64748b; font-size: 13px; line-height: 1.5;">
+                                        ${observations || '<em style="color: #94a3b8;">No observations yet. Click "Edit" to add notes.</em>'}
                                     </div>
                                 </div>
                             </div>
