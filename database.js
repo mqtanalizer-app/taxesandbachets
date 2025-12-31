@@ -392,6 +392,25 @@ class DatabaseService {
             return { success: false, error: error.message };
         }
     }
+
+    updateFinancialsInLocalStorage(quoteId, totalGenerated, totalSpent) {
+        try {
+            const key = `client_${quoteId}`;
+            const existingData = localStorage.getItem(key);
+            if (existingData) {
+                const clientData = JSON.parse(existingData);
+                clientData.totalGenerated = totalGenerated;
+                clientData.totalSpent = totalSpent;
+                clientData.updatedAt = new Date().toISOString();
+                localStorage.setItem(key, JSON.stringify(clientData));
+                return { success: true };
+            } else {
+                return { success: false, error: 'Client not found' };
+            }
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
 }
 
 // Create and export singleton instance
