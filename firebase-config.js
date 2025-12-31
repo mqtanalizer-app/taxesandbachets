@@ -19,14 +19,17 @@ const firebaseConfig = {
 // Note: Firebase SDK must be loaded before this file
 let db = null;
 let firebaseApp = null;
+let auth = null;
 
 if (typeof firebase !== 'undefined' && firebase.apps.length === 0) {
     firebaseApp = firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
-    console.log('✅ Firebase initialized successfully');
+    auth = firebase.auth();
+    console.log('✅ Firebase initialized successfully (Firestore + Auth)');
 } else if (typeof firebase !== 'undefined') {
     firebaseApp = firebase.app();
     db = firebase.firestore();
+    auth = firebase.auth();
     console.log('✅ Firebase already initialized');
 } else {
     console.warn('⚠️ Firebase SDK not loaded. Using localStorage fallback.');
