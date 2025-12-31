@@ -2940,6 +2940,31 @@
                         <strong>ℹ️ Note:</strong> Only administrators can login. Clients are created by administrators from the admin panel.
                     </p>
                 </div>
+                
+                <!-- First Admin Creation (only shows if no users exist) -->
+                <div id="firstAdminSection" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 2px solid #e2e8f0;">
+                    <div style="background: #e0f2fe; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #0ea5e9;">
+                        <p style="margin: 0; color: #0c4a6e; font-size: 13px; line-height: 1.5;">
+                            <strong>🚀 First Time Setup:</strong> No users found. Create the first administrator account below.
+                        </p>
+                    </div>
+                    <h4 style="color: #1e3c72; margin-bottom: 15px; font-size: 16px;">Create First Admin</h4>
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="firstAdminEmail" placeholder="admin@example.com" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                    </div>
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label>Password (min. 6 characters)</label>
+                        <input type="password" id="firstAdminPassword" placeholder="Enter password" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                    </div>
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label>Confirm Password</label>
+                        <input type="password" id="firstAdminPasswordConfirm" placeholder="Confirm password" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                    </div>
+                    <button onclick="createFirstAdmin()" style="width: 100%; margin-top: 15px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 15px; box-shadow: 0 4px 12px rgba(16,185,129,0.3);">
+                        ✨ Create First Admin
+                    </button>
+                </div>
             </div>
             
             
@@ -3219,30 +3244,131 @@
         }
         
         // Check authentication on page load
-        function checkAuthOnLoad() {
+        async function checkAuthOnLoad() {
             // Wait a bit for authService to initialize
-            setTimeout(() => {
+            setTimeout(async () => {
                 if (window.authService) {
                     if (!window.authService.isAuthenticated()) {
                         // Hide main content and show login modal
                         hideMainContent();
                         showLoginModal();
+                        // Check if we need to show first admin creation
+                        await checkIfFirstAdminNeeded();
                     } else {
                         // Show main content if authenticated
                         showMainContent();
                     }
                 } else {
                     // If authService is not available, show login after a longer delay
-                    setTimeout(() => {
+                    setTimeout(async () => {
                         if (!window.authService || !window.authService.isAuthenticated()) {
                             hideMainContent();
                             showLoginModal();
+                            await checkIfFirstAdminNeeded();
                         } else {
                             showMainContent();
                         }
                     }, 2000);
                 }
             }, 500);
+        }
+
+        // Check if first admin needs to be created
+        async function checkIfFirstAdminNeeded() {
+            if (!window.userManagementService) return;
+
+            try {
+                const users = await window.userManagementService.getAllUsers();
+                const firstAdminSection = document.getElementById('firstAdminSection');
+                
+                if (users.length === 0 && firstAdminSection) {
+                    // No users exist, show first admin creation
+                    firstAdminSection.style.display = 'block';
+                } else if (firstAdminSection) {
+                    // Users exist, hide first admin section
+                    firstAdminSection.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error checking users:', error);
+                // If error, show first admin section as fallback
+                const firstAdminSection = document.getElementById('firstAdminSection');
+                if (firstAdminSection) {
+                    firstAdminSection.style.display = 'block';
+                }
+            }
+        }
+
+        // Create first admin
+        async function createFirstAdmin() {
+            const email = document.getElementById('firstAdminEmail').value.trim();
+            const password = document.getElementById('firstAdminPassword').value;
+            const passwordConfirm = document.getElementById('firstAdminPasswordConfirm').value;
+
+            if (!email || !password) {
+                alert('⚠️ Please enter both email and password.');
+                return;
+            }
+
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                alert('⚠️ Please enter a valid email address.');
+                return;
+            }
+
+            if (password.length < 6) {
+                alert('⚠️ Password must be at least 6 characters long.');
+                return;
+            }
+
+            if (password !== passwordConfirm) {
+                alert('⚠️ Passwords do not match. Please try again.');
+                return;
+            }
+
+            // Show loading state
+            const createBtn = event.target;
+            const originalText = createBtn.innerHTML;
+            createBtn.innerHTML = '⏳ Creating Admin...';
+            createBtn.disabled = true;
+
+            try {
+                if (window.userManagementService) {
+                    const result = await window.userManagementService.createUser(email, password, 'admin');
+                    if (result.success) {
+                        alert('✅ First administrator created successfully! You can now login.');
+                        // Auto login
+                        if (window.authService) {
+                            const loginResult = await window.authService.login(email, password);
+                            if (loginResult.success) {
+                                closeLoginModal();
+                                showMainContent();
+                                alert('✅ Login successful! Welcome, Administrator.');
+                            }
+                        }
+                        // Clear form
+                        document.getElementById('firstAdminEmail').value = '';
+                        document.getElementById('firstAdminPassword').value = '';
+                        document.getElementById('firstAdminPasswordConfirm').value = '';
+                        // Hide first admin section
+                        const firstAdminSection = document.getElementById('firstAdminSection');
+                        if (firstAdminSection) {
+                            firstAdminSection.style.display = 'none';
+                        }
+                    } else {
+                        alert('❌ Error creating admin: ' + (result.error || 'Unknown error'));
+                    }
+                } else {
+                    alert('⚠️ User management service not available. Please refresh the page.');
+                }
+            } catch (error) {
+                console.error('Error creating first admin:', error);
+                alert('❌ Error creating admin: ' + error.message);
+            } finally {
+                // Restore button state
+                createBtn.innerHTML = originalText;
+                createBtn.disabled = false;
+            }
         }
         
         // Hide main content (show only when authenticated)
