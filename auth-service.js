@@ -1,23 +1,34 @@
-// Authentication Service
-// Handles user authentication and role management
+// Authentication Service - Using Firebase Auth v9+ Modular SDK
+import { auth } from './firebase-config.js';
+import { 
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged
+} from 'firebase/auth';
+import { db } from './firebase-config.js';
+import {
+    doc,
+    getDoc,
+    setDoc,
+    serverTimestamp
+} from 'firebase/firestore';
 
 class AuthService {
     constructor() {
         this.currentUser = null;
         this.userRole = null;
-        this.auth = null;
+        this.auth = auth;
         this.initializeAuth();
     }
 
     initializeAuth() {
-        if (typeof firebase !== 'undefined' && firebase.auth) {
-            this.auth = firebase.auth();
-            
+        if (this.auth) {
             // Listen for auth state changes
-            this.auth.onAuthStateChanged((user) => {
+            onAuthStateChanged(this.auth, async (user) => {
                 if (user) {
                     this.currentUser = user;
-                    this.loadUserRole(user.uid);
+                    await this.loadUserRole(user.uid);
                 } else {
                     this.currentUser = null;
                     this.userRole = null;
@@ -31,7 +42,7 @@ class AuthService {
 
     // Load user role from Firestore
     async loadUserRole(uid) {
-        if (!this.auth || !firebase.firestore) {
+        if (!this.auth || !db) {
             // Fallback to localStorage
             const userData = JSON.parse(localStorage.getItem('userData') || '{}');
             this.userRole = userData.role || 'client';
@@ -39,10 +50,9 @@ class AuthService {
         }
 
         try {
-            const db = firebase.firestore();
-            const userDoc = await db.collection('users').doc(uid).get();
+            const userDoc = await getDoc(doc(db, 'users', uid));
             
-            if (userDoc.exists) {
+            if (userDoc.exists()) {
                 const userData = userDoc.data();
                 this.userRole = userData.role || 'client';
                 
@@ -70,16 +80,15 @@ class AuthService {
 
         try {
             // Create user
-            const userCredential = await this.auth.createUserWithEmailAndPassword(email, password);
+            const userCredential = await createUserWithEmailAndPassword(this.auth, email, password);
             const user = userCredential.user;
 
             // Save user data to Firestore
-            if (firebase.firestore) {
-                const db = firebase.firestore();
-                await db.collection('users').doc(user.uid).set({
+            if (db) {
+                await setDoc(doc(db, 'users', user.uid), {
                     email: email,
                     role: role,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    createdAt: serverTimestamp(),
                     ...additionalData
                 });
             }
@@ -106,7 +115,7 @@ class AuthService {
         }
 
         try {
-            const userCredential = await this.auth.signInWithEmailAndPassword(email, password);
+            const userCredential = await signInWithEmailAndPassword(this.auth, email, password);
             const user = userCredential.user;
             
             // Load user role
@@ -122,7 +131,7 @@ class AuthService {
     // Logout user
     async logout() {
         if (this.auth) {
-            await this.auth.signOut();
+            await signOut(this.auth);
         }
         
         this.currentUser = null;
@@ -198,7 +207,9 @@ class AuthService {
     // Require authentication (redirect to login if not authenticated)
     requireAuth() {
         if (!this.isAuthenticated()) {
-            showLoginModal();
+            if (typeof showLoginModal === 'function') {
+                showLoginModal();
+            }
             return false;
         }
         return true;
@@ -207,7 +218,9 @@ class AuthService {
     // Require admin role
     requireAdmin() {
         if (!this.isAuthenticated()) {
-            showLoginModal();
+            if (typeof showLoginModal === 'function') {
+                showLoginModal();
+            }
             return false;
         }
         if (!this.isAdmin()) {
@@ -220,3 +233,4 @@ class AuthService {
 
 // Create global instance
 const authService = new AuthService();
+export default authService;

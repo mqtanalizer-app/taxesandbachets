@@ -1,229 +1,269 @@
-// Database Service Module
-// Handles all Firestore database operations with localStorage fallback
+// Database Service - Using Firebase Firestore v9+ Modular SDK
+import { db } from './firebase-config.js';
+import { 
+    collection, 
+    doc, 
+    addDoc, 
+    setDoc, 
+    getDoc, 
+    getDocs, 
+    updateDoc, 
+    deleteDoc, 
+    query, 
+    where, 
+    serverTimestamp,
+    Timestamp
+} from 'firebase/firestore';
 
 class DatabaseService {
     constructor() {
-        this.db = null;
-        this.useFirestore = false;
-        this.initializeFirestore();
+        this.db = db;
+        this.isAvailable = db !== null;
     }
 
-    initializeFirestore() {
-        // Check if Firestore is available
-        if (typeof firebase !== 'undefined' && firebase.firestore) {
-            try {
-                this.db = firebase.firestore();
-                this.useFirestore = true;
-                console.log('✅ Firestore database ready');
-            } catch (error) {
-                console.warn('⚠️ Firestore initialization error:', error);
-                this.useFirestore = false;
-            }
-        } else {
-            console.warn('⚠️ Firestore not available. Using localStorage fallback.');
-            this.useFirestore = false;
+    isFirestoreAvailable() {
+        return this.isAvailable;
+    }
+
+    // Save client quote to Firestore
+    async saveClientQuote(clientData) {
+        if (!this.isAvailable) {
+            console.warn('Firestore not available, using localStorage fallback');
+            return this.saveToLocalStorage(clientData);
         }
-    }
 
-    // Save client quote data
-    async saveClientQuote(quoteId, quoteData) {
         try {
-            if (this.useFirestore && this.db) {
-                // Add metadata
-                const dataWithMetadata = {
-                    ...quoteData,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    quoteId: quoteId
-                };
+            const quoteId = clientData.quoteId || clientData.quoteNumber?.toLowerCase().replace(/\s+/g, '-') || `quote-${Date.now()}`;
+            const quoteRef = doc(db, 'clients', quoteId);
 
-                await this.db.collection('clients').doc(quoteId).set(dataWithMetadata, { merge: true });
-                
-                // Also save to localStorage as backup
-                localStorage.setItem('secureAssetsQuote2025', JSON.stringify(quoteData));
-                
-                return { success: true, id: quoteId, source: 'firestore' };
-            } else {
-                // Fallback to localStorage
-                localStorage.setItem('secureAssetsQuote2025', JSON.stringify(quoteData));
-                return { success: true, id: quoteId, source: 'localStorage' };
-            }
-        } catch (error) {
-            console.error('Error saving quote:', error);
-            // Fallback to localStorage on error
-            try {
-                localStorage.setItem('secureAssetsQuote2025', JSON.stringify(quoteData));
-                return { success: true, id: quoteId, source: 'localStorage-fallback' };
-            } catch (localError) {
-                return { success: false, error: localError.message };
-            }
-        }
-    }
+            // Prepare data with timestamps
+            const dataToSave = {
+                ...clientData,
+                quoteId: quoteId,
+                updatedAt: serverTimestamp()
+            };
 
-    // Load client quote data by ID
-    async loadClientQuote(quoteId) {
-        try {
-            if (this.useFirestore && this.db) {
-                const doc = await this.db.collection('clients').doc(quoteId).get();
-                if (doc.exists) {
-                    const data = doc.data();
-                    // Also update localStorage
-                    localStorage.setItem('secureAssetsQuote2025', JSON.stringify(data));
-                    return { success: true, data: data, source: 'firestore' };
-                } else {
-                    // Try localStorage as fallback
-                    const localData = localStorage.getItem('secureAssetsQuote2025');
-                    if (localData) {
-                        const data = JSON.parse(localData);
-                        return { success: true, data: data, source: 'localStorage' };
-                    }
-                    return { success: false, error: 'Quote not found' };
-                }
-            } else {
-                // Use localStorage
-                const localData = localStorage.getItem('secureAssetsQuote2025');
-                if (localData) {
-                    const data = JSON.parse(localData);
-                    return { success: true, data: data, source: 'localStorage' };
-                }
-                return { success: false, error: 'No data found' };
+            // If document doesn't exist, set createdAt
+            const docSnap = await getDoc(quoteRef);
+            if (!docSnap.exists()) {
+                dataToSave.createdAt = serverTimestamp();
             }
+
+            await setDoc(quoteRef, dataToSave, { merge: true });
+
+            return {
+                success: true,
+                quoteId: quoteId,
+                message: 'Client quote saved successfully to Firestore'
+            };
         } catch (error) {
-            console.error('Error loading quote:', error);
+            console.error('Error saving to Firestore:', error);
             // Fallback to localStorage
-            try {
-                const localData = localStorage.getItem('secureAssetsQuote2025');
-                if (localData) {
-                    const data = JSON.parse(localData);
-                    return { success: true, data: data, source: 'localStorage-fallback' };
-                }
-                return { success: false, error: error.message };
-            } catch (localError) {
-                return { success: false, error: localError.message };
+            return this.saveToLocalStorage(clientData);
+        }
+    }
+
+    // Load client quote from Firestore
+    async loadClientQuote(quoteId) {
+        if (!this.isAvailable) {
+            return this.loadFromLocalStorage(quoteId);
+        }
+
+        try {
+            const quoteRef = doc(db, 'clients', quoteId);
+            const docSnap = await getDoc(quoteRef);
+
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                return {
+                    success: true,
+                    data: data
+                };
+            } else {
+                return {
+                    success: false,
+                    error: 'Quote not found'
+                };
             }
+        } catch (error) {
+            console.error('Error loading from Firestore:', error);
+            return this.loadFromLocalStorage(quoteId);
         }
     }
 
     // Search client by password
     async searchClientByPassword(password) {
-        try {
-            if (this.useFirestore && this.db) {
-                const snapshot = await this.db.collection('clients')
-                    .where('clientPassword', '==', password)
-                    .limit(1)
-                    .get();
+        if (!this.isAvailable) {
+            return this.searchInLocalStorage(password);
+        }
 
-                if (!snapshot.empty) {
-                    const doc = snapshot.docs[0];
-                    return { success: true, data: doc.data(), id: doc.id, source: 'firestore' };
-                }
-                return { success: false, error: 'Client not found with this password' };
+        try {
+            const q = query(
+                collection(db, 'clients'),
+                where('clientPassword', '==', password),
+                where('deleted', '!=', true)
+            );
+
+            const querySnapshot = await getDocs(q);
+            
+            if (!querySnapshot.empty) {
+                const doc = querySnapshot.docs[0];
+                return {
+                    success: true,
+                    data: { id: doc.id, ...doc.data() }
+                };
             } else {
-                // Fallback: search in localStorage
-                const localData = localStorage.getItem('secureAssetsQuote2025');
-                if (localData) {
-                    const data = JSON.parse(localData);
-                    if (data.clientPassword === password) {
-                        return { success: true, data: data, source: 'localStorage' };
-                    }
-                }
-                return { success: false, error: 'Client not found' };
+                return {
+                    success: false,
+                    error: 'Client not found with that password'
+                };
             }
         } catch (error) {
-            console.error('Error searching client:', error);
-            return { success: false, error: error.message };
+            console.error('Error searching in Firestore:', error);
+            return this.searchInLocalStorage(password);
         }
     }
 
-    // Get all clients (paginated)
-    async getAllClients(limit = 50, startAfter = null) {
+    // Get all clients
+    async getAllClients() {
+        if (!this.isAvailable) {
+            return this.getAllFromLocalStorage();
+        }
+
         try {
-            if (this.useFirestore && this.db) {
-                let query = this.db.collection('clients')
-                    .orderBy('createdAt', 'desc')
-                    .limit(limit);
+            const q = query(
+                collection(db, 'clients'),
+                where('deleted', '!=', true)
+            );
 
-                if (startAfter) {
-                    query = query.startAfter(startAfter);
-                }
+            const querySnapshot = await getDocs(q);
+            const clients = [];
 
-                const snapshot = await query.get();
-                const clients = [];
-                snapshot.forEach(doc => {
-                    clients.push({
-                        id: doc.id,
-                        ...doc.data()
-                    });
+            querySnapshot.forEach((doc) => {
+                clients.push({
+                    id: doc.id,
+                    quoteId: doc.id,
+                    ...doc.data()
                 });
+            });
 
-                return { success: true, clients: clients, source: 'firestore' };
-            } else {
-                // Fallback: return current localStorage data as single item
-                const localData = localStorage.getItem('secureAssetsQuote2025');
-                if (localData) {
-                    const data = JSON.parse(localData);
-                    return { success: true, clients: [data], source: 'localStorage' };
-                }
-                return { success: true, clients: [], source: 'localStorage' };
-            }
+            return {
+                success: true,
+                clients: clients
+            };
         } catch (error) {
-            console.error('Error getting clients:', error);
-            return { success: false, error: error.message, clients: [] };
+            console.error('Error getting clients from Firestore:', error);
+            return this.getAllFromLocalStorage();
         }
     }
 
-    // Update client status (e.g., completed, in-progress, etc.)
+    // Update client status
     async updateClientStatus(quoteId, status) {
+        if (!this.isAvailable) {
+            return { success: false, error: 'Firestore not available' };
+        }
+
         try {
-            if (this.useFirestore && this.db) {
-                await this.db.collection('clients').doc(quoteId).update({
-                    status: status,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                return { success: true, source: 'firestore' };
-            } else {
-                // Fallback: update localStorage
-                const localData = localStorage.getItem('secureAssetsQuote2025');
-                if (localData) {
-                    const data = JSON.parse(localData);
-                    data.status = status;
-                    localStorage.setItem('secureAssetsQuote2025', JSON.stringify(data));
-                    return { success: true, source: 'localStorage' };
-                }
-                return { success: false, error: 'Client not found' };
-            }
+            const quoteRef = doc(db, 'clients', quoteId);
+            await updateDoc(quoteRef, {
+                status: status,
+                updatedAt: serverTimestamp()
+            });
+
+            return { success: true };
         } catch (error) {
-            console.error('Error updating status:', error);
+            console.error('Error updating client status:', error);
             return { success: false, error: error.message };
         }
     }
 
-    // Delete client (soft delete by setting deleted flag)
+    // Delete client (soft delete)
     async deleteClient(quoteId) {
+        if (!this.isAvailable) {
+            return this.deleteFromLocalStorage(quoteId);
+        }
+
         try {
-            if (this.useFirestore && this.db) {
-                await this.db.collection('clients').doc(quoteId).update({
-                    deleted: true,
-                    deletedAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                return { success: true, source: 'firestore' };
-            } else {
-                // Fallback: remove from localStorage
-                localStorage.removeItem('secureAssetsQuote2025');
-                return { success: true, source: 'localStorage' };
-            }
+            const quoteRef = doc(db, 'clients', quoteId);
+            await updateDoc(quoteRef, {
+                deleted: true,
+                deletedAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+            });
+
+            return { success: true };
         } catch (error) {
             console.error('Error deleting client:', error);
             return { success: false, error: error.message };
         }
     }
 
-    // Check if Firestore is available
-    isFirestoreAvailable() {
-        return this.useFirestore;
+    // LocalStorage fallback methods
+    saveToLocalStorage(clientData) {
+        try {
+            const key = `client_${clientData.quoteId || clientData.quoteNumber || Date.now()}`;
+            localStorage.setItem(key, JSON.stringify({
+                ...clientData,
+                savedAt: new Date().toISOString()
+            }));
+            return { success: true, message: 'Saved to localStorage' };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    loadFromLocalStorage(quoteId) {
+        try {
+            const key = `client_${quoteId}`;
+            const data = localStorage.getItem(key);
+            if (data) {
+                return { success: true, data: JSON.parse(data) };
+            }
+            return { success: false, error: 'Not found in localStorage' };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    searchInLocalStorage(password) {
+        try {
+            const keys = Object.keys(localStorage).filter(k => k.startsWith('client_'));
+            for (const key of keys) {
+                const data = JSON.parse(localStorage.getItem(key));
+                if (data.clientPassword === password) {
+                    return { success: true, data: data };
+                }
+            }
+            return { success: false, error: 'Not found' };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    getAllFromLocalStorage() {
+        try {
+            const keys = Object.keys(localStorage).filter(k => k.startsWith('client_'));
+            const clients = keys.map(key => ({
+                id: key.replace('client_', ''),
+                ...JSON.parse(localStorage.getItem(key))
+            }));
+            return { success: true, clients: clients };
+        } catch (error) {
+            return { success: false, error: error.message, clients: [] };
+        }
+    }
+
+    deleteFromLocalStorage(quoteId) {
+        try {
+            const key = `client_${quoteId}`;
+            localStorage.removeItem(key);
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
     }
 }
 
-// Create global instance
+// Create and export singleton instance
 const databaseService = new DatabaseService();
+export default databaseService;

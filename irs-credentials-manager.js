@@ -1,24 +1,22 @@
-// IRS Credentials Manager
-// Securely manages company credentials for official IRS site access
+// IRS Credentials Manager - Using Firebase Firestore v9+ Modular SDK
+import { db } from './firebase-config.js';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import authService from './auth-service.js';
 
 class IRSCredentialsManager {
     constructor() {
         this.credentials = null;
-        this.encryptionKey = null; // In production, use proper encryption
     }
 
     // Initialize with company credentials
     async initializeCredentials(companyCredentials) {
-        // Store credentials securely (in production, use proper encryption)
-        // For now, we'll store in Firestore with admin-only access
+        // Store credentials securely in Firestore with admin-only access
         try {
-            if (firebase.firestore && authService.isAdmin()) {
-                const db = firebase.firestore();
-                
+            if (db && authService.isAdmin()) {
                 // Store credentials in admin-only collection
-                await db.collection('admin').doc('irs-credentials').set({
+                await setDoc(doc(db, 'admin', 'irs-credentials'), {
                     ...companyCredentials,
-                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: serverTimestamp(),
                     updatedBy: authService.getCurrentUser().uid
                 }, { merge: true });
                 
@@ -43,11 +41,10 @@ class IRSCredentialsManager {
         }
 
         try {
-            if (firebase.firestore) {
-                const db = firebase.firestore();
-                const credsDoc = await db.collection('admin').doc('irs-credentials').get();
+            if (db) {
+                const credsDoc = await getDoc(doc(db, 'admin', 'irs-credentials'));
                 
-                if (credsDoc.exists) {
+                if (credsDoc.exists()) {
                     this.credentials = credsDoc.data();
                     return { success: true, credentials: this.credentials };
                 }
@@ -150,3 +147,4 @@ class IRSCredentialsManager {
 
 // Create global instance
 const irsCredentialsManager = new IRSCredentialsManager();
+export default irsCredentialsManager;

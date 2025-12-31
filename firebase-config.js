@@ -1,36 +1,27 @@
 // Firebase Configuration
-// IMPORTANT: Replace these values with your Firebase project credentials
-// To get your credentials:
-// 1. Go to https://console.firebase.google.com/
-// 2. Create a new project or select an existing one
-// 3. Go to Project Settings > General > Your apps
-// 4. Add a web app and copy the config values
+// Using Firebase JS SDK v9+ (Modular SDK)
 
+import { initializeApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+
+// Your web app's Firebase configuration
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY_HERE",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyAqjdInEpXf1NRf1o7dl1QHYNf4GGZHXG8",
+    authDomain: "taxesapp-9f5c2.firebaseapp.com",
+    projectId: "taxesapp-9f5c2",
+    storageBucket: "taxesapp-9f5c2.firebasestorage.app",
+    messagingSenderId: "173841214106",
+    appId: "1:173841214106:web:ef3113402006ba3e1b0d23",
+    measurementId: "G-JGV2GWV20V"
 };
 
 // Initialize Firebase
-// Note: Firebase SDK must be loaded before this file
-let db = null;
-let firebaseApp = null;
-let auth = null;
+const app = initializeApp(firebaseConfig);
 
-if (typeof firebase !== 'undefined' && firebase.apps.length === 0) {
-    firebaseApp = firebase.initializeApp(firebaseConfig);
-    db = firebase.firestore();
-    auth = firebase.auth();
-    console.log('✅ Firebase initialized successfully (Firestore + Auth)');
-} else if (typeof firebase !== 'undefined') {
-    firebaseApp = firebase.app();
-    db = firebase.firestore();
-    auth = firebase.auth();
-    console.log('✅ Firebase already initialized');
-} else {
-    console.warn('⚠️ Firebase SDK not loaded. Using localStorage fallback.');
-}
+// Initialize Firebase services
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+// Export for use in other modules
+export { app, db, auth };

@@ -3076,27 +3076,31 @@
         </div>
     </div>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <!-- Firebase SDK v9+ Modular (using npm) -->
+    <!-- Load Firebase modules and expose to global scope for compatibility -->
+    <script type="module">
+        // Import Firebase modules
+        import { app, db, auth } from './firebase-config.js';
+        import databaseService from './database.js';
+        import authService from './auth-service.js';
+        import irsCredentialsManager from './irs-credentials-manager.js';
+        
+        // Make available globally for inline scripts
+        window.app = app;
+        window.db = db;
+        window.auth = auth;
+        window.databaseService = databaseService;
+        window.authService = authService;
+        window.irsCredentialsManager = irsCredentialsManager;
+        
+        console.log('✅ Firebase initialized successfully (v9+ Modular SDK)');
+    </script>
     
-    <!-- Firebase Configuration -->
-    <script src="firebase-config.js"></script>
-    
-    <!-- Database Service -->
-    <script src="database.js"></script>
-    
-    <!-- IRS Forms Manager -->
+    <!-- IRS Forms Manager (non-module, works standalone) -->
     <script src="forms-downloader.js"></script>
     
-    <!-- AI Forms Assistant -->
+    <!-- AI Forms Assistant (non-module, works standalone) -->
     <script src="ai-forms-assistant.js"></script>
-    
-    <!-- Authentication Service -->
-    <script src="auth-service.js"></script>
-    
-    <!-- IRS Credentials Manager -->
-    <script src="irs-credentials-manager.js"></script>
     
     <script>
         // Variables globales
