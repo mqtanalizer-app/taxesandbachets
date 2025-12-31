@@ -4917,17 +4917,31 @@
                         const scaledHeight = Math.floor(displayHeight * dpr);
                         
                         if (canvas.width !== scaledWidth || canvas.height !== scaledHeight) {
-                            // Guardar el contenido actual si existe
+                            // Guardar el contenido actual si existe (solo si el canvas tiene tamaño válido)
                             const ctx = signatureContexts[id];
-                            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                            let imageData = null;
+                            
+                            // Solo intentar obtener imageData si el canvas tiene un tamaño válido
+                            if (canvas.width > 0 && canvas.height > 0) {
+                                try {
+                                    imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                                } catch (e) {
+                                    console.warn('Could not get image data from canvas:', e);
+                                    imageData = null;
+                                }
+                            }
                             
                             // Ajustar tamaño
                             canvas.width = scaledWidth;
                             canvas.height = scaledHeight;
                             
-                            // Restaurar contenido si había algo
-                            if (imageData.data.some((pixel, index) => index % 4 === 3 && pixel > 0)) {
-                                ctx.putImageData(imageData, 0, 0);
+                            // Restaurar contenido si había algo y es válido
+                            if (imageData && imageData.data && imageData.data.some((pixel, index) => index % 4 === 3 && pixel > 0)) {
+                                try {
+                                    ctx.putImageData(imageData, 0, 0);
+                                } catch (e) {
+                                    console.warn('Could not put image data to canvas:', e);
+                                }
                             }
                             
                             ctx.scale(dpr, dpr);
