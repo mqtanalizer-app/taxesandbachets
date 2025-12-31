@@ -167,6 +167,22 @@ class AuthService {
 
     // Update UI based on auth state
     updateUI() {
+        // Show/hide main content based on authentication
+        const container = document.querySelector('.container');
+        const loginModal = document.getElementById('loginModal');
+        
+        if (this.isAuthenticated()) {
+            // Show main content
+            if (container) container.style.display = 'block';
+            if (loginModal) loginModal.style.display = 'none';
+        } else {
+            // Hide main content and show login modal
+            if (container) container.style.display = 'none';
+            if (loginModal && typeof showLoginModal === 'function') {
+                showLoginModal();
+            }
+        }
+        
         // Show/hide admin features
         const adminElements = document.querySelectorAll('.admin-only');
         adminElements.forEach(el => {

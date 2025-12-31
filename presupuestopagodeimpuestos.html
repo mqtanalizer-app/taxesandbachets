@@ -3139,6 +3139,177 @@
             });
         }
         
+        // ========== AUTHENTICATION FUNCTIONS ==========
+        
+        // Show login modal
+        function showLoginModal() {
+            const modal = document.getElementById('loginModal');
+            if (modal) {
+                modal.style.display = 'block';
+                // Show login tab by default
+                document.getElementById('loginTab').style.display = 'block';
+                document.getElementById('registerTab').style.display = 'none';
+            }
+        }
+        
+        // Close login modal (only if authenticated)
+        function closeLoginModal() {
+            // Only allow closing if user is authenticated
+            if (window.authService && window.authService.isAuthenticated()) {
+                const modal = document.getElementById('loginModal');
+                if (modal) {
+                    modal.style.display = 'none';
+                }
+            } else {
+                // If not authenticated, prevent closing and show message
+                alert('⚠️ Please login or register to access the application.');
+            }
+        }
+        
+        // Switch to login tab
+        function switchToLogin() {
+            document.getElementById('loginTab').style.display = 'block';
+            document.getElementById('registerTab').style.display = 'none';
+        }
+        
+        // Switch to register tab
+        function switchToRegister() {
+            document.getElementById('loginTab').style.display = 'none';
+            document.getElementById('registerTab').style.display = 'block';
+        }
+        
+        // Login user
+        async function loginUser() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            
+            if (!email || !password) {
+                alert('⚠️ Please enter both email and password.');
+                return;
+            }
+            
+            try {
+                if (window.authService) {
+                    const result = await window.authService.login(email, password);
+                    if (result.success) {
+                        closeLoginModal();
+                        showMainContent();
+                        alert('✅ Login successful! Welcome back.');
+                        // Clear form
+                        document.getElementById('loginEmail').value = '';
+                        document.getElementById('loginPassword').value = '';
+                    } else {
+                        alert('❌ Login failed: ' + (result.error || 'Invalid credentials'));
+                    }
+                } else {
+                    alert('⚠️ Authentication service not available. Please refresh the page.');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('❌ Error during login: ' + error.message);
+            }
+        }
+        
+        // Register user
+        async function registerUser() {
+            const email = document.getElementById('registerEmail').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const passwordConfirm = document.getElementById('registerPasswordConfirm').value;
+            const role = document.getElementById('registerRole').value;
+            
+            if (!email || !password) {
+                alert('⚠️ Please enter both email and password.');
+                return;
+            }
+            
+            if (password.length < 6) {
+                alert('⚠️ Password must be at least 6 characters long.');
+                return;
+            }
+            
+            if (password !== passwordConfirm) {
+                alert('⚠️ Passwords do not match.');
+                return;
+            }
+            
+            try {
+                if (window.authService) {
+                    const result = await window.authService.register(email, password, role);
+                    if (result.success) {
+                        closeLoginModal();
+                        showMainContent();
+                        alert('✅ Account created successfully! You are now logged in.');
+                        // Clear form
+                        document.getElementById('registerEmail').value = '';
+                        document.getElementById('registerPassword').value = '';
+                        document.getElementById('registerPasswordConfirm').value = '';
+                    } else {
+                        alert('❌ Registration failed: ' + (result.error || 'Could not create account'));
+                    }
+                } else {
+                    alert('⚠️ Authentication service not available. Please refresh the page.');
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                alert('❌ Error during registration: ' + error.message);
+            }
+        }
+        
+        // Check authentication on page load
+        function checkAuthOnLoad() {
+            // Wait a bit for authService to initialize
+            setTimeout(() => {
+                if (window.authService) {
+                    if (!window.authService.isAuthenticated()) {
+                        // Hide main content and show login modal
+                        hideMainContent();
+                        showLoginModal();
+                    } else {
+                        // Show main content if authenticated
+                        showMainContent();
+                    }
+                } else {
+                    // If authService is not available, show login after a longer delay
+                    setTimeout(() => {
+                        if (!window.authService || !window.authService.isAuthenticated()) {
+                            hideMainContent();
+                            showLoginModal();
+                        } else {
+                            showMainContent();
+                        }
+                    }, 2000);
+                }
+            }, 500);
+        }
+        
+        // Hide main content (show only when authenticated)
+        function hideMainContent() {
+            const container = document.querySelector('.container');
+            if (container) {
+                container.style.display = 'none';
+            }
+        }
+        
+        // Show main content (when authenticated)
+        function showMainContent() {
+            const container = document.querySelector('.container');
+            if (container) {
+                container.style.display = 'block';
+            }
+        }
+        
+        // Logout user
+        async function logoutUser() {
+            if (window.authService) {
+                await window.authService.logout();
+                hideMainContent();
+                showLoginModal();
+                alert('✅ You have been logged out successfully.');
+            }
+        }
+        
+        // ========== END AUTHENTICATION FUNCTIONS ==========
+        
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
             // Cargar logo
@@ -3164,6 +3335,9 @@
             
             // Configurar handler para pegar imágenes desde portapapeles
             setupPasteHandler();
+            
+            // Check authentication and show login if needed
+            checkAuthOnLoad();
         });
         
         // Función para calcular ingresos netos
