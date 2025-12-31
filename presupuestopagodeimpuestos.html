@@ -52,6 +52,9 @@
             width: 100%;
             overflow-x: hidden;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            height: auto;
+            min-height: 100vh;
         }
         
         body {
@@ -65,9 +68,11 @@
             -moz-osx-font-smoothing: grayscale;
             width: 100%;
             overflow-x: hidden;
-            overflow-y: auto;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch;
             min-height: 100vh;
             box-sizing: border-box;
+            position: relative;
         }
         
         .container {
@@ -1541,7 +1546,7 @@
             cursor: crosshair;
         }
         
-        /* Prevenir scroll mientras se firma en móvil */
+        /* Prevenir scroll mientras se firma en móvil - SOLO cuando se está dibujando activamente */
         body.signing {
             overflow: hidden !important;
             position: fixed;
@@ -1551,11 +1556,27 @@
             left: 0;
         }
         
-        /* Asegurar que se remueva la clase signing */
+        /* Asegurar que el scroll funcione normalmente cuando NO se está firmando */
         body:not(.signing) {
             overflow-x: hidden;
-            overflow-y: auto;
-            position: relative;
+            overflow-y: auto !important;
+            position: relative !important;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* Mejorar scroll en móviles */
+        @media (max-width: 768px) {
+            html, body {
+                overflow-x: hidden;
+                overflow-y: auto !important;
+                -webkit-overflow-scrolling: touch;
+                height: auto;
+                min-height: 100vh;
+            }
+            
+            .container {
+                overflow: visible;
+            }
         }
         
         /* Mejorar área táctil en móvil */
@@ -4948,55 +4969,69 @@
                     }
                     
                     // Event listeners para touch (móvil y tablets)
+                    // Solo prevenir scroll cuando realmente se está dibujando
+                    let touchStartedOnCanvas = false;
+                    
                     canvas.addEventListener('touchstart', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        e.stopImmediatePropagation();
-                        
-                        // Prevenir scroll mientras se firma
-                        document.body.classList.add('signing');
-                        
+                        // Solo prevenir si el touch está directamente en el canvas
+                        const rect = canvas.getBoundingClientRect();
                         const touch = e.touches[0];
                         if (touch) {
-                            startDrawing(touch, id);
+                            const x = touch.clientX - rect.left;
+                            const y = touch.clientY - rect.top;
+                            
+                            // Verificar que el touch está dentro del canvas
+                            if (x >= 0 && x <= rect.width && y >= 0 && y <= rect.height) {
+                                touchStartedOnCanvas = true;
+                                e.preventDefault();
+                                e.stopPropagation();
+                                
+                                // Prevenir scroll SOLO cuando se empieza a dibujar
+                                document.body.classList.add('signing');
+                                
+                                startDrawing(touch, id);
+                            }
                         }
                     }, { passive: false });
                     
                     canvas.addEventListener('touchmove', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        e.stopImmediatePropagation();
-                        
-                        if (isDrawing && e.touches.length > 0) {
-                            const touch = e.touches[0];
-                            if (touch) {
-                                draw(touch, id);
+                        if (touchStartedOnCanvas && isDrawing) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            if (e.touches.length > 0) {
+                                const touch = e.touches[0];
+                                if (touch) {
+                                    draw(touch, id);
+                                }
                             }
                         }
                     }, { passive: false });
                     
                     canvas.addEventListener('touchend', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        e.stopImmediatePropagation();
-                        
-                        stopDrawing();
-                        
-                        // Permitir scroll de nuevo después de un breve delay
-                        setTimeout(() => {
+                        if (touchStartedOnCanvas) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            stopDrawing();
+                            touchStartedOnCanvas = false;
+                            
+                            // Permitir scroll de nuevo inmediatamente
                             document.body.classList.remove('signing');
-                        }, 100);
+                        }
                     }, { passive: false });
                     
                     canvas.addEventListener('touchcancel', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        e.stopImmediatePropagation();
-                        
-                        stopDrawing();
-                        
-                        // Permitir scroll de nuevo inmediatamente
-                        document.body.classList.remove('signing');
+                        if (touchStartedOnCanvas) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            
+                            stopDrawing();
+                            touchStartedOnCanvas = false;
+                            
+                            // Permitir scroll de nuevo inmediatamente
+                            document.body.classList.remove('signing');
+                        }
                     }, { passive: false });
                 }
             });
