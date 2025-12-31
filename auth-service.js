@@ -188,6 +188,12 @@ class AuthService {
         adminElements.forEach(el => {
             el.style.display = this.isAdmin() ? 'block' : 'none';
         });
+        
+        // Show/hide Admin Panel button
+        const adminPanelButton = document.getElementById('adminPanelButtonContainer');
+        if (adminPanelButton) {
+            adminPanelButton.style.display = this.isAdmin() ? 'block' : 'none';
+        }
 
         // Show/hide client features
         const clientElements = document.querySelectorAll('.client-only');

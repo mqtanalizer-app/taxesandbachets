@@ -1606,6 +1606,12 @@
                     Quote #: <input type="text" id="quoteNumber" value="ET-2025-001" style="background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,0.5); color: white; width: 120px; text-align: center;">
                 </div>
             </div>
+            <!-- Admin Panel Button (Admin Only) -->
+            <div id="adminPanelButtonContainer" style="position: absolute; top: 20px; right: 20px; display: none;">
+                <button onclick="openAdminPanel()" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 14px; box-shadow: 0 4px 12px rgba(239,68,68,0.4); transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(239,68,68,0.5)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(239,68,68,0.4)'">
+                    ⚙️ Admin Panel
+                </button>
+            </div>
         </div>
 
         <!-- METADATA BAR -->
@@ -3431,6 +3437,33 @@
             // Check authentication and show login if needed
             checkAuthOnLoad();
         });
+        
+        // ========== ADMIN PANEL FUNCTIONS ==========
+        
+        // Open Admin Panel
+        function openAdminPanel() {
+            if (!window.authService || !window.authService.isAdmin()) {
+                alert('⚠️ Admin access required.');
+                return;
+            }
+            const modal = document.getElementById('adminPanelModal');
+            if (modal) {
+                modal.style.display = 'block';
+            }
+        }
+        
+        // Close Admin Panel
+        function closeAdminPanel() {
+            const modal = document.getElementById('adminPanelModal');
+            if (modal) {
+                modal.style.display = 'none';
+                // Clear admin panel content
+                const adminContent = document.getElementById('adminPanelContent');
+                if (adminContent) {
+                    adminContent.innerHTML = '';
+                }
+            }
+        }
         
         // ========== USER MANAGEMENT FUNCTIONS (Admin Panel) ==========
         
