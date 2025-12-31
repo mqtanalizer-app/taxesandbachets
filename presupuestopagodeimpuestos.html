@@ -2919,7 +2919,7 @@
         <div style="max-width: 450px; margin: 50px auto; background: white; border-radius: 16px; padding: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); position: relative;">
             <div style="text-align: center; margin-bottom: 30px;">
                 <h2 style="color: #1e3c72; font-size: 28px; margin: 0 0 10px 0;">🔐 Authentication</h2>
-                <p style="color: #64748b; font-size: 14px;">Login or create an account to access all features</p>
+                <p style="color: #64748b; font-size: 14px;">Each client needs their own account. Login or create your account to access your information.</p>
             </div>
             
             <div id="loginTab" style="display: block;">
@@ -2943,29 +2943,28 @@
             </div>
             
             <div id="registerTab" style="display: none;">
-                <h3 style="color: #1e3c72; margin-bottom: 20px; font-size: 20px;">Create Account</h3>
+                <h3 style="color: #1e3c72; margin-bottom: 20px; font-size: 20px;">Create Your Client Account</h3>
+                <div style="background: #e0f2fe; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #0ea5e9;">
+                    <p style="margin: 0; color: #0c4a6e; font-size: 13px; line-height: 1.5;">
+                        <strong>📋 Important:</strong> Each client must have their own account. Use your personal email address to create your account. You'll be able to access your tax information and forms securely.
+                    </p>
+                </div>
                 <div class="form-group">
-                    <label>Email Address</label>
+                    <label>Email Address (Your personal email)</label>
                     <input type="email" id="registerEmail" placeholder="your@email.com" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                    <small style="color: #64748b; font-size: 12px; display: block; margin-top: 5px;">This will be your username for login</small>
                 </div>
                 <div class="form-group" style="margin-top: 15px;">
                     <label>Password (min. 6 characters)</label>
-                    <input type="password" id="registerPassword" placeholder="Create a password" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                    <input type="password" id="registerPassword" placeholder="Create a secure password" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
                 </div>
                 <div class="form-group" style="margin-top: 15px;">
                     <label>Confirm Password</label>
-                    <input type="password" id="registerPasswordConfirm" placeholder="Confirm password" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                    <input type="password" id="registerPasswordConfirm" placeholder="Re-enter your password" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
                 </div>
-                <div class="form-group" style="margin-top: 15px;">
-                    <label>Account Type</label>
-                    <select id="registerRole" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
-                        <option value="client">Client (Normal User)</option>
-                        <option value="admin">Admin (Requires approval)</option>
-                    </select>
-                    <small style="color: #64748b; font-size: 12px; display: block; margin-top: 5px;">Admin accounts require verification by existing administrators.</small>
-                </div>
+                <input type="hidden" id="registerRole" value="client">
                 <button onclick="registerUser()" style="width: 100%; margin-top: 20px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 15px; box-shadow: 0 4px 12px rgba(16,185,129,0.3);">
-                    ✨ Create Account
+                    ✨ Create My Account
                 </button>
                 <div style="text-align: center; margin-top: 20px;">
                     <button onclick="switchToLogin()" style="background: none; border: none; color: #2563eb; cursor: pointer; text-decoration: underline; font-size: 14px;">
@@ -2974,7 +2973,7 @@
                 </div>
             </div>
             
-            <button onclick="closeLoginModal()" style="position: absolute; top: 15px; right: 15px; background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">✕</button>
+            <button onclick="closeLoginModal()" style="position: absolute; top: 15px; right: 15px; background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; display: none;">✕</button>
         </div>
     </div>
 
@@ -3084,6 +3083,7 @@
         import databaseService from './database.js';
         import authService from './auth-service.js';
         import irsCredentialsManager from './irs-credentials-manager.js';
+        import userManagementService from './user-management.js';
         
         // Make available globally for inline scripts
         window.app = app;
@@ -3092,6 +3092,7 @@
         window.databaseService = databaseService;
         window.authService = authService;
         window.irsCredentialsManager = irsCredentialsManager;
+        window.userManagementService = userManagementService;
         
         console.log('✅ Firebase initialized successfully (v9+ Modular SDK)');
     </script>
@@ -3188,18 +3189,51 @@
                 return;
             }
             
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                alert('⚠️ Please enter a valid email address.');
+                return;
+            }
+            
+            // Show loading state
+            const loginBtn = event.target;
+            const originalText = loginBtn.innerHTML;
+            loginBtn.innerHTML = '⏳ Logging in...';
+            loginBtn.disabled = true;
+            
             try {
                 if (window.authService) {
                     const result = await window.authService.login(email, password);
                     if (result.success) {
+                        // Success - user is now logged in
+                        const userRole = result.role || 'client';
+                        const welcomeMessage = userRole === 'admin' 
+                            ? '✅ Login successful! Welcome back, Administrator.'
+                            : '✅ Login successful! Welcome back.';
+                        alert(welcomeMessage);
                         closeLoginModal();
                         showMainContent();
-                        alert('✅ Login successful! Welcome back.');
                         // Clear form
                         document.getElementById('loginEmail').value = '';
                         document.getElementById('loginPassword').value = '';
                     } else {
-                        alert('❌ Login failed: ' + (result.error || 'Invalid credentials'));
+                        // Handle specific Firebase errors
+                        let errorMessage = 'Invalid credentials. ';
+                        if (result.error) {
+                            if (result.error.includes('user-not-found')) {
+                                errorMessage = '❌ No account found with this email. Please register first or check your email.';
+                            } else if (result.error.includes('wrong-password')) {
+                                errorMessage = '❌ Incorrect password. Please try again or use "Forgot Password".';
+                            } else if (result.error.includes('invalid-email')) {
+                                errorMessage = '❌ Invalid email address. Please check and try again.';
+                            } else if (result.error.includes('too-many-requests')) {
+                                errorMessage = '❌ Too many failed attempts. Please try again later.';
+                            } else {
+                                errorMessage = '❌ ' + result.error;
+                            }
+                        }
+                        alert(errorMessage);
                     }
                 } else {
                     alert('⚠️ Authentication service not available. Please refresh the page.');
@@ -3207,6 +3241,10 @@
             } catch (error) {
                 console.error('Login error:', error);
                 alert('❌ Error during login: ' + error.message);
+            } finally {
+                // Restore button state
+                loginBtn.innerHTML = originalText;
+                loginBtn.disabled = false;
             }
         }
         
@@ -3215,10 +3253,17 @@
             const email = document.getElementById('registerEmail').value.trim();
             const password = document.getElementById('registerPassword').value;
             const passwordConfirm = document.getElementById('registerPasswordConfirm').value;
-            const role = document.getElementById('registerRole').value;
+            const role = document.getElementById('registerRole').value || 'client'; // Always client for self-registration
             
             if (!email || !password) {
                 alert('⚠️ Please enter both email and password.');
+                return;
+            }
+            
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                alert('⚠️ Please enter a valid email address.');
                 return;
             }
             
@@ -3228,23 +3273,43 @@
             }
             
             if (password !== passwordConfirm) {
-                alert('⚠️ Passwords do not match.');
+                alert('⚠️ Passwords do not match. Please try again.');
                 return;
             }
+            
+            // Show loading state
+            const registerBtn = event.target;
+            const originalText = registerBtn.innerHTML;
+            registerBtn.innerHTML = '⏳ Creating Account...';
+            registerBtn.disabled = true;
             
             try {
                 if (window.authService) {
                     const result = await window.authService.register(email, password, role);
                     if (result.success) {
+                        // Success - user is now logged in
+                        alert('✅ Account created successfully! Welcome! You are now logged in.');
                         closeLoginModal();
                         showMainContent();
-                        alert('✅ Account created successfully! You are now logged in.');
                         // Clear form
                         document.getElementById('registerEmail').value = '';
                         document.getElementById('registerPassword').value = '';
                         document.getElementById('registerPasswordConfirm').value = '';
                     } else {
-                        alert('❌ Registration failed: ' + (result.error || 'Could not create account'));
+                        // Handle specific Firebase errors
+                        let errorMessage = 'Could not create account. ';
+                        if (result.error) {
+                            if (result.error.includes('email-already-in-use')) {
+                                errorMessage = '❌ This email is already registered. Please login instead or use a different email.';
+                            } else if (result.error.includes('weak-password')) {
+                                errorMessage = '❌ Password is too weak. Please use a stronger password.';
+                            } else if (result.error.includes('invalid-email')) {
+                                errorMessage = '❌ Invalid email address. Please check and try again.';
+                            } else {
+                                errorMessage = '❌ ' + result.error;
+                            }
+                        }
+                        alert(errorMessage);
                     }
                 } else {
                     alert('⚠️ Authentication service not available. Please refresh the page.');
@@ -3252,6 +3317,10 @@
             } catch (error) {
                 console.error('Registration error:', error);
                 alert('❌ Error during registration: ' + error.message);
+            } finally {
+                // Restore button state
+                registerBtn.innerHTML = originalText;
+                registerBtn.disabled = false;
             }
         }
         
