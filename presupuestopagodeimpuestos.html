@@ -3212,12 +3212,22 @@
                     if (result.success) {
                         // Success - user is now logged in
                         const userRole = result.role || 'client';
+                        
+                        // Wait a bit to ensure role is fully loaded
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        
+                        // Force UI update
+                        if (window.authService.updateUI) {
+                            window.authService.updateUI();
+                        }
+                        
                         const welcomeMessage = userRole === 'admin' 
                             ? '✅ Login successful! Welcome back, Administrator.'
                             : '✅ Login successful! Welcome back.';
                         alert(welcomeMessage);
                         closeLoginModal();
                         showMainContent();
+                        
                         // Clear form
                         document.getElementById('loginEmail').value = '';
                         document.getElementById('loginPassword').value = '';

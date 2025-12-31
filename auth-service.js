@@ -46,6 +46,7 @@ class AuthService {
             // Fallback to localStorage
             const userData = JSON.parse(localStorage.getItem('userData') || '{}');
             this.userRole = userData.role || 'client';
+            console.log('Loaded role from localStorage:', this.userRole);
             return;
         }
 
@@ -56,6 +57,12 @@ class AuthService {
                 const userData = userDoc.data();
                 this.userRole = userData.role || 'client';
                 
+                console.log('Loaded role from Firestore:', {
+                    uid: uid,
+                    role: this.userRole,
+                    userData: userData
+                });
+                
                 // Save to localStorage as backup
                 localStorage.setItem('userData', JSON.stringify({
                     uid: uid,
@@ -64,6 +71,7 @@ class AuthService {
                 }));
             } else {
                 // Default role for new users
+                console.warn('User document not found in Firestore for uid:', uid);
                 this.userRole = 'client';
             }
         } catch (error) {
@@ -118,8 +126,19 @@ class AuthService {
             const userCredential = await signInWithEmailAndPassword(this.auth, email, password);
             const user = userCredential.user;
             
-            // Load user role
+            // Load user role - IMPORTANT: Wait for it to complete
             await this.loadUserRole(user.uid);
+            
+            // Force UI update after role is loaded
+            this.updateUI();
+            
+            // Log for debugging
+            console.log('User logged in:', {
+                uid: user.uid,
+                email: email,
+                role: this.userRole,
+                isAdmin: this.isAdmin()
+            });
             
             return { success: true, user: user, role: this.userRole };
         } catch (error) {
