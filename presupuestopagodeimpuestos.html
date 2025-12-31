@@ -3075,6 +3075,41 @@
         </div>
     </div>
 
+    <!-- Create Client Modal -->
+    <div id="createClientModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10001; overflow-y: auto;">
+        <div style="max-width: 600px; margin: 50px auto; background: white; border-radius: 16px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 2px solid #e2e8f0; padding-bottom: 15px;">
+                <h2 style="color: #1e3c72; font-size: 28px; margin: 0;">➕ Create New Client</h2>
+                <button onclick="closeCreateClientModal()" style="background: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">✕ Close</button>
+            </div>
+            
+            <form id="createClientForm" onsubmit="createClientFromForm(event); return false;">
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; color: #1e3c72; font-weight: 600; margin-bottom: 8px; font-size: 14px;">Email *</label>
+                    <input type="email" id="newClientEmail" required style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box;" placeholder="client@example.com">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; color: #1e3c72; font-weight: 600; margin-bottom: 8px; font-size: 14px;">Password *</label>
+                    <input type="password" id="newClientPassword" required minlength="6" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box;" placeholder="Minimum 6 characters">
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; color: #1e3c72; font-weight: 600; margin-bottom: 8px; font-size: 14px;">Role *</label>
+                    <select id="newClientRole" required style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                        <option value="client">Client</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 25px;">
+                    <button type="submit" style="flex: 1; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">✅ Create Client</button>
+                    <button type="button" onclick="closeCreateClientModal()" style="flex: 1; background: #64748b; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Client List Modal -->
     <div id="clientListModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; overflow-y: auto;">
         <div style="max-width: 1200px; margin: 30px auto; background: white; border-radius: 16px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
@@ -4647,6 +4682,8 @@
             if (modal) {
                 modal.style.display = 'none';
             }
+            // Also close create client modal if open
+            closeCreateClientModal();
         }
         
         // Show Forms Library Modal
@@ -4831,18 +4868,94 @@
         
         // ========== CREATE CLIENT FROM DATABASE ==========
         
-        // Show create client form
+        // Show create client form modal
         function showCreateClientForm() {
             if (!window.authService || !window.authService.isAdmin()) {
-                alert('⚠️ Only administrators can create new clients. Please use the Admin Panel to create users.');
+                alert('⚠️ Only administrators can create new clients.');
                 return;
             }
             
-            // Open Admin Panel and go to User Management
-            openAdminPanel();
-            setTimeout(() => {
-                loadUserManagement();
-            }, 300);
+            // Show the create client modal
+            const modal = document.getElementById('createClientModal');
+            if (modal) {
+                modal.style.display = 'block';
+                // Clear form
+                document.getElementById('createClientForm').reset();
+            }
+        }
+        
+        // Close create client modal
+        function closeCreateClientModal() {
+            const modal = document.getElementById('createClientModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        // Create client from form
+        async function createClientFromForm(event) {
+            event.preventDefault();
+            
+            if (!window.userManagementService) {
+                alert('⚠️ User management service not available. Please refresh the page.');
+                return;
+            }
+            
+            const email = document.getElementById('newClientEmail').value.trim();
+            const password = document.getElementById('newClientPassword').value;
+            const role = document.getElementById('newClientRole').value;
+            
+            if (!email || !password) {
+                alert('⚠️ Please enter both email and password.');
+                return;
+            }
+            
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                alert('⚠️ Please enter a valid email address.');
+                return;
+            }
+            
+            if (password.length < 6) {
+                alert('⚠️ Password must be at least 6 characters long.');
+                return;
+            }
+            
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '⏳ Creating...';
+            submitBtn.disabled = true;
+            
+            try {
+                const result = await window.userManagementService.createUser(email, password, role);
+                
+                if (result.success) {
+                    alert(`✅ ${role === 'admin' ? 'Administrator' : 'Client'} account created successfully!\n\nEmail: ${email}\nRole: ${role}`);
+                    closeCreateClientModal();
+                    // Refresh client list
+                    await refreshClientList();
+                } else {
+                    let errorMessage = 'Could not create user. ';
+                    if (result.error) {
+                        if (result.error.includes('email-already-in-use')) {
+                            errorMessage = '❌ This email is already registered. Please use a different email.';
+                        } else if (result.error.includes('weak-password')) {
+                            errorMessage = '❌ Password is too weak. Please use a stronger password.';
+                        } else if (result.error.includes('invalid-email')) {
+                            errorMessage = '❌ Invalid email address. Please check and try again.';
+                        } else {
+                            errorMessage = '❌ ' + result.error;
+                        }
+                    }
+                    alert(errorMessage);
+                }
+            } catch (error) {
+                console.error('Error creating client:', error);
+                alert('❌ Error creating client: ' + error.message);
+            } finally {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
         }
         
         // ========== END CREATE CLIENT FUNCTIONS ==========
