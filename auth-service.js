@@ -5,14 +5,14 @@ import {
     signInWithEmailAndPassword,
     signOut,
     onAuthStateChanged
-} from 'firebase/auth';
+} from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js';
 import { db } from './firebase-config.js';
 import {
     doc,
     getDoc,
     setDoc,
     serverTimestamp
-} from 'firebase/firestore';
+} from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
 class AuthService {
     constructor() {

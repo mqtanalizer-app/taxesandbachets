@@ -4409,7 +4409,7 @@
                 const canvas = document.getElementById(id);
                 if (canvas) {
                     signatureCanvases[id] = canvas;
-                    signatureContexts[id] = canvas.getContext('2d');
+                    signatureContexts[id] = canvas.getContext('2d', { willReadFrequently: true });
                     
                     // Función para ajustar tamaño del canvas
                     function resizeCanvas() {

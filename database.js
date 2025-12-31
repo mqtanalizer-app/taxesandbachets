@@ -13,7 +13,7 @@ import {
     where, 
     serverTimestamp,
     Timestamp
-} from 'firebase/firestore';
+} from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 
 class DatabaseService {
     constructor() {

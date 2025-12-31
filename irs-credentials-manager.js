@@ -1,6 +1,6 @@
 // IRS Credentials Manager - Using Firebase Firestore v9+ Modular SDK
 import { db } from './firebase-config.js';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js';
 import authService from './auth-service.js';
 
 class IRSCredentialsManager {

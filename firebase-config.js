@@ -1,9 +1,9 @@
 // Firebase Configuration
-// Using Firebase JS SDK v9+ (Modular SDK)
+// Using Firebase JS SDK v9+ (Modular SDK) from CDN
 
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getFirestore } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
