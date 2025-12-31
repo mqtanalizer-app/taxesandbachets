@@ -4892,32 +4892,22 @@
                         const quoteNum = client.quoteNumber || 'N/A';
                         const password = client.clientPassword || 'N/A';
                         const createdAt = client.createdAt ? (client.createdAt.toDate ? client.createdAt.toDate().toLocaleDateString() : client.createdAt) : 'Unknown';
-                        const observations = client.observations || '';
-                        const quoteId = client.quoteId || quoteNum.replace(/\s+/g, '-').toLowerCase();
                         
                         html += `
-                            <div style="border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px; background: #f8fafc; transition: all 0.3s; margin-bottom: 15px;" onmouseover="this.style.borderColor='#2563eb'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
+                            <div style="border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px; background: #f8fafc; transition: all 0.3s;" onmouseover="this.style.borderColor='#2563eb'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.1)'" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
                                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
-                                    <div style="flex: 1;">
+                                    <div>
                                         <h3 style="color: #1e3c72; margin: 0 0 8px 0; font-size: 20px;">${clientName}</h3>
-                                        <div style="color: #64748b; font-size: 14px; margin-bottom: 10px;">
+                                        <div style="color: #64748b; font-size: 14px;">
                                             <strong>Quote #:</strong> ${quoteNum}<br>
                                             <strong>Email:</strong> ${clientEmail}<br>
-                                            ${window.authService && window.authService.isAdmin() ? `<strong>Password:</strong> <code style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">${password}</code><br>` : ''}
-                                            <strong>User:</strong> ${client.userEmail || client.userId || 'Not assigned'}<br>
+                                            <strong>Password:</strong> <code style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">${password}</code><br>
                                             <strong>Created:</strong> ${createdAt}
                                         </div>
-                                        <div style="margin-top: 10px;">
-                                            <strong style="color: #1e3c72; font-size: 14px;">📝 Observations:</strong>
-                                            <div id="observations-${quoteId}" style="background: white; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px; margin-top: 5px; min-height: 40px; color: #64748b; font-size: 13px;">
-                                                ${observations || '<em style="color: #94a3b8;">No observations yet. Click "Edit Observations" to add notes.</em>'}
-                                            </div>
-                                        </div>
                                     </div>
-                                    <div style="display: flex; flex-direction: column; gap: 8px; margin-left: 15px;">
-                                        <button onclick="loadClientById('${quoteId}')" style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; white-space: nowrap;">📄 Load</button>
-                                        <button onclick="editClientObservations('${quoteId}')" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; white-space: nowrap;">📝 Edit Observations</button>
-                                        <button onclick="deleteClient('${quoteId}')" style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; white-space: nowrap;">🗑️ Delete</button>
+                                    <div style="display: flex; gap: 8px;">
+                                        <button onclick="loadClientById('${client.quoteId || quoteNum.replace(/\s+/g, '-').toLowerCase()}')" style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">📄 Load</button>
+                                        ${window.authService && window.authService.isAdmin() ? `<button onclick="deleteClient('${client.quoteId || quoteNum.replace(/\s+/g, '-').toLowerCase()}')" style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px;">🗑️ Delete</button>` : ''}
                                     </div>
                                 </div>
                             </div>
@@ -4958,6 +4948,46 @@
             } catch (error) {
                 console.error('Error loading client:', error);
                 alert('⚠️ Error loading client: ' + error.message);
+            }
+        }
+        
+        // Edit client observations
+        async function editClientObservations(quoteId) {
+            try {
+                // Load current client data
+                const result = await databaseService.loadClientQuote(quoteId);
+                if (!result.success) {
+                    alert('⚠️ Could not load client data.');
+                    return;
+                }
+                
+                const client = result.data;
+                const currentObservations = client.observations || '';
+                
+                // Show modal/prompt for editing observations
+                const newObservations = prompt('📝 Edit Observations for Client:\n\n' + 
+                    `Client: ${client.firstName1 || ''} ${client.lastName1 || ''}\n` +
+                    `Quote: ${client.quoteNumber || quoteId}\n\n` +
+                    'Enter observations:', currentObservations);
+                
+                if (newObservations === null) {
+                    // User cancelled
+                    return;
+                }
+                
+                // Update client with new observations
+                const updateResult = await databaseService.updateClientObservations(quoteId, newObservations.trim());
+                
+                if (updateResult.success) {
+                    alert('✅ Observations updated successfully');
+                    // Refresh the client list to show updated observations
+                    await refreshClientList();
+                } else {
+                    throw new Error(updateResult.error || 'Unknown error');
+                }
+            } catch (error) {
+                console.error('Error updating observations:', error);
+                alert('⚠️ Error updating observations: ' + error.message);
             }
         }
         

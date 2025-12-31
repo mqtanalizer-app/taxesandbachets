@@ -221,6 +221,28 @@ class DatabaseService {
             return { success: false, error: error.message };
         }
     }
+    
+    // Update client observations
+    async updateClientObservations(quoteId, observations) {
+        if (!this.isAvailable) {
+            // Fallback to localStorage
+            return this.updateObservationsInLocalStorage(quoteId, observations);
+        }
+
+        try {
+            const quoteRef = doc(db, 'clients', quoteId);
+            await updateDoc(quoteRef, {
+                observations: observations,
+                updatedAt: serverTimestamp()
+            });
+
+            return { success: true };
+        } catch (error) {
+            console.error('Error updating client observations:', error);
+            // Fallback to localStorage
+            return this.updateObservationsInLocalStorage(quoteId, observations);
+        }
+    }
 
     // Delete client (soft delete)
     async deleteClient(quoteId) {
@@ -325,6 +347,24 @@ class DatabaseService {
             const key = `client_${quoteId}`;
             localStorage.removeItem(key);
             return { success: true };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+    
+    updateObservationsInLocalStorage(quoteId, observations) {
+        try {
+            const key = `client_${quoteId}`;
+            const existingData = localStorage.getItem(key);
+            if (existingData) {
+                const clientData = JSON.parse(existingData);
+                clientData.observations = observations;
+                clientData.updatedAt = new Date().toISOString();
+                localStorage.setItem(key, JSON.stringify(clientData));
+                return { success: true };
+            } else {
+                return { success: false, error: 'Client not found' };
+            }
         } catch (error) {
             return { success: false, error: error.message };
         }
