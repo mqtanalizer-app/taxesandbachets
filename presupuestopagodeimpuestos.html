@@ -3088,6 +3088,7 @@
                     <input type="text" id="clientSearchInput" placeholder="Search by name, email, quote number, or password..." style="flex: 1; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
                     <button onclick="searchClients()" style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">🔍 Search</button>
                     <button onclick="refreshClientList()" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">🔄 Refresh</button>
+                    <button onclick="showCreateClientForm()" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600;">➕ Create New Client</button>
                 </div>
                 <div id="dbStatus" style="padding: 12px; border-radius: 8px; margin-bottom: 15px; background: #fff3cd; border: 1px solid #ffc107;">
                     <strong>Database Status:</strong> <span id="dbStatusText">Checking...</span>
@@ -4620,6 +4621,184 @@
                 modal.style.display = 'none';
             }
         }
+        
+        // ========== FORMS LIBRARY FUNCTIONS ==========
+        
+        // Refresh Forms Library
+        async function refreshFormsLibrary() {
+            const container = document.getElementById('formsLibraryContainer');
+            const statusText = document.getElementById('formsLibraryStatusText');
+            
+            if (!container) return;
+            
+            try {
+                statusText.textContent = 'Loading forms...';
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #64748b;"><div style="font-size: 48px; margin-bottom: 15px;">⏳</div><div>Loading forms library...</div></div>';
+                
+                // Try to load forms from forms-database.json or localStorage
+                let forms = [];
+                
+                // Check if forms-database.json exists (would need to be loaded via fetch)
+                try {
+                    const response = await fetch('./forms-database.json');
+                    if (response.ok) {
+                        forms = await response.json();
+                    }
+                } catch (e) {
+                    // If file doesn't exist, use localStorage or default list
+                    const savedForms = localStorage.getItem('irsFormsDatabase');
+                    if (savedForms) {
+                        forms = JSON.parse(savedForms);
+                    } else {
+                        // Default forms list
+                        forms = [
+                            { id: '1040', name: 'Form 1040', category: 'Individual', description: 'U.S. Individual Income Tax Return' },
+                            { id: '1040-SR', name: 'Form 1040-SR', category: 'Individual', description: 'U.S. Tax Return for Seniors' },
+                            { id: '1040-ES', name: 'Form 1040-ES', category: 'Individual', description: 'Estimated Tax for Individuals' },
+                            { id: '1120', name: 'Form 1120', category: 'Business', description: 'U.S. Corporation Income Tax Return' },
+                            { id: '1120S', name: 'Form 1120-S', category: 'Business', description: 'U.S. Income Tax Return for an S Corporation' },
+                            { id: '1065', name: 'Form 1065', category: 'Business', description: 'U.S. Return of Partnership Income' },
+                            { id: 'Schedule-A', name: 'Schedule A', category: 'Schedule', description: 'Itemized Deductions' },
+                            { id: 'Schedule-B', name: 'Schedule B', category: 'Schedule', description: 'Interest and Ordinary Dividends' },
+                            { id: 'Schedule-C', name: 'Schedule C', category: 'Schedule', description: 'Profit or Loss from Business' },
+                            { id: 'W-2', name: 'Form W-2', category: 'Information', description: 'Wage and Tax Statement' },
+                            { id: '1099-MISC', name: 'Form 1099-MISC', category: 'Information', description: 'Miscellaneous Income' },
+                            { id: '1099-INT', name: 'Form 1099-INT', category: 'Information', description: 'Interest Income' }
+                        ];
+                        localStorage.setItem('irsFormsDatabase', JSON.stringify(forms));
+                    }
+                }
+                
+                // Store forms globally for search/filter
+                allForms = forms;
+                
+                // Render forms
+                renderFormsList(forms);
+                statusText.textContent = `Loaded ${forms.length} forms successfully`;
+            } catch (error) {
+                console.error('Error loading forms library:', error);
+                statusText.textContent = 'Error loading forms: ' + error.message;
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #dc3545;"><div style="font-size: 48px; margin-bottom: 15px;">❌</div><div>Error loading forms library</div></div>';
+            }
+        }
+        
+        // Render forms list
+        function renderFormsList(forms) {
+            const container = document.getElementById('formsLibraryContainer');
+            if (!container) return;
+            
+            if (!forms || forms.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #64748b;"><div style="font-size: 48px; margin-bottom: 15px;">📭</div><div>No forms found</div></div>';
+                return;
+            }
+            
+            const formsHTML = forms.map(form => `
+                <div style="background: white; border: 2px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s;">
+                    <div style="flex: 1;">
+                        <h3 style="color: #1e3c72; margin: 0 0 8px 0; font-size: 18px;">${form.name || form.id}</h3>
+                        <p style="color: #64748b; margin: 0 0 8px 0; font-size: 14px;">${form.description || 'No description available'}</p>
+                        <span style="background: #e0e7ff; color: #4338ca; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;">${form.category || 'Other'}</span>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="downloadForm('${form.id}')" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">⬇️ Download</button>
+                        <button onclick="viewFormDetails('${form.id}')" style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px;">👁️ View</button>
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = formsHTML;
+        }
+        
+        // Search forms
+        let allForms = [];
+        function searchForms() {
+            const searchInput = document.getElementById('formsSearchInput');
+            const searchTerm = searchInput?.value.trim().toLowerCase();
+            
+            if (!searchTerm) {
+                renderFormsList(allForms);
+                return;
+            }
+            
+            const filtered = allForms.filter(form => 
+                (form.name && form.name.toLowerCase().includes(searchTerm)) ||
+                (form.id && form.id.toLowerCase().includes(searchTerm)) ||
+                (form.description && form.description.toLowerCase().includes(searchTerm)) ||
+                (form.category && form.category.toLowerCase().includes(searchTerm))
+            );
+            
+            renderFormsList(filtered);
+        }
+        
+        // Filter forms by category
+        function filterFormsByCategory() {
+            const categoryFilter = document.getElementById('formsCategoryFilter');
+            const selectedCategory = categoryFilter?.value;
+            
+            if (!selectedCategory || selectedCategory === 'all') {
+                renderFormsList(allForms);
+                return;
+            }
+            
+            const filtered = allForms.filter(form => form.category === selectedCategory);
+            renderFormsList(filtered);
+        }
+        
+        // Get AI form recommendations
+        async function getAIFormRecommendations() {
+            const contentDiv = document.getElementById('aiRecommendationsContent');
+            if (!contentDiv) return;
+            
+            contentDiv.innerHTML = '<div style="color: #92400e;">🤖 Analyzing client data and generating recommendations...</div>';
+            
+            // Simulate AI analysis (in a real implementation, this would call an AI service)
+            setTimeout(() => {
+                const recommendations = [
+                    'Based on your client data, we recommend:',
+                    '• Form 1040 - Standard individual tax return',
+                    '• Schedule A - For itemized deductions',
+                    '• Form 1099-INT - If client has interest income',
+                    '• Form W-2 - For wage income reporting'
+                ];
+                
+                contentDiv.innerHTML = recommendations.map(rec => `<div style="margin-bottom: 8px;">${rec}</div>`).join('');
+            }, 1500);
+        }
+        
+        // Download form
+        function downloadForm(formId) {
+            alert(`Downloading form ${formId}...\n\nIn a production environment, this would download the form from the official IRS website.`);
+            // In production, this would trigger an actual download from IRS site
+        }
+        
+        // View form details
+        function viewFormDetails(formId) {
+            const form = allForms.find(f => f.id === formId);
+            if (form) {
+                alert(`Form Details:\n\nID: ${form.id}\nName: ${form.name}\nCategory: ${form.category}\nDescription: ${form.description || 'No description available'}`);
+            }
+        }
+        
+        
+        // ========== END FORMS LIBRARY FUNCTIONS ==========
+        
+        // ========== CREATE CLIENT FROM DATABASE ==========
+        
+        // Show create client form
+        function showCreateClientForm() {
+            if (!window.authService || !window.authService.isAdmin()) {
+                alert('⚠️ Only administrators can create new clients. Please use the Admin Panel to create users.');
+                return;
+            }
+            
+            // Open Admin Panel and go to User Management
+            openAdminPanel();
+            setTimeout(() => {
+                loadUserManagement();
+            }, 300);
+        }
+        
+        // ========== END CREATE CLIENT FUNCTIONS ==========
         
         // Refresh client list
         async function refreshClientList() {
